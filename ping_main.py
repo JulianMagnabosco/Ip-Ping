@@ -15,7 +15,7 @@ class AppPing(Frame):
     def __init__(self,master=None) -> None:
         Frame.__init__(self,master)
         self.master['bg'] = '#AC99F2'
-        self.pack()
+        self.pack(expand=True,fill=BOTH)
 
         """
         tabla = ttk.Frame(self)
@@ -43,83 +43,77 @@ class AppPing(Frame):
         tabla.pack()
         """
         
+        menu = LabelFrame(self,text="Opciones")
+        menu.grid(column=2,row=0,sticky=S+N+E+W)
+
+        texto_label = Label(menu,text="Check Rate")
+        texto_label.pack(side=TOP)
+        texto = Entry(menu)
+        texto.pack(side=TOP,padx = 10, pady = 5)
+
+
 
         tabla_scrolly = Scrollbar(self)
-        tabla_scrolly.pack(side=RIGHT, fill=Y)
+        # tabla_scrolly.pack(side=RIGHT, fill=Y)
+        tabla_scrolly.grid(column=1,row=0,sticky=N+S)
 
         tabla_scrollx = Scrollbar(self,orient='horizontal')
-        tabla_scrollx.pack(side= BOTTOM,fill=X)
+        # tabla_scrollx.pack(side= BOTTOM,fill=X)
+        tabla_scrollx.grid(column=0,row=1,sticky=W+E)
 
+        agarre = ttk.Sizegrip(self)
+        # tabla_scrollx.pack(side= BOTTOM,fill=X)
+        agarre.grid(column=2,row=1,sticky=S+E)
         
         def select(a):
-            curItem = self.table.focus()
-            print (self.table.item(curItem)["values"])
-            curRow = self.table.set(a)
-            print(curRow)
+            curItem = self.tabla.focus()
+            textItem = self.tabla.item(curItem)["values"]
+            print (textItem)
+            
+            newWindow = Toplevel(master)
+            newWindow.title("New Window")
+            Label(newWindow, text =textItem).pack()
 
-        self.table = ttk.Treeview(self,yscrollcommand=tabla_scrolly.set, xscrollcommand =tabla_scrollx.set)
-        self.table.bind('<Double-Button-1>', select)
+        self.tabla = ttk.Treeview(self,yscrollcommand=tabla_scrolly.set, xscrollcommand =tabla_scrollx.set)
+        self.tabla.bind('<Double-Button-1>', select)
 
 
-        self.table.pack()
+        # self.table.pack(expand=True,fill=BOTH)
+        self.tabla.grid(column=0,row=0,sticky=S+N+E+W)
+        self.columnconfigure(0,weight=1)
+        self.rowconfigure(0,weight=1)
 
-        tabla_scrolly.config(command=self.table.yview)
-        tabla_scrollx.config(command=self.table.xview)
+        tabla_scrolly.config(command=self.tabla.yview)
+        tabla_scrollx.config(command=self.tabla.xview)
 
         #define our column
 
-        self.table['columns'] = ('player_id', 'player_name', 'player_Rank', 'player_states', 'player_city')
+        self.tabla['columns'] = ('player_id', 'player_name', 'player_Rank', 'player_states', 'player_city')
 
         # format our column
-        self.table.column("#0", width=0,  stretch=NO)
-        self.table.column("player_id",anchor=CENTER, width=80)
-        self.table.column("player_name",anchor=CENTER,width=80)
-        self.table.column("player_Rank",anchor=CENTER,width=80)
-        self.table.column("player_states",anchor=CENTER,width=80)
-        self.table.column("player_city",anchor=CENTER,width=80)
+        self.tabla.column("#0", width=0,  stretch=NO)
+        self.tabla.heading("#0",text="",anchor=W)
+        self.insertar_columna("player_id")
+        self.insertar_columna("player_name")
+        self.insertar_columna("player_Rank")
+        self.insertar_columna("player_states")
+        self.insertar_columna("player_city")
 
-        #Create Headings 
-        self.table.heading("#0",text="",anchor=CENTER)
-        self.table.heading("player_id",text="Id",anchor=CENTER)
-        self.table.heading("player_name",text="Name",anchor=CENTER)
-        self.table.heading("player_Rank",text="Rank",anchor=CENTER)
-        self.table.heading("player_states",text="States",anchor=CENTER)
-        self.table.heading("player_city",text="States",anchor=CENTER)
 
         #add data 
-        self.table.insert(parent='',index='end',iid=0,text='',
-        values=('1','Ninja','101','Oklahoma', 'Moore'))
-        self.table.insert(parent='',index='end',iid=1,text='',
-        values=('2','Ranger','102','Wisconsin', 'Green Bay'))
-        self.table.insert(parent='',index='end',iid=2,text='',
-        values=('3','Deamon','103', 'California', 'Placentia'))
-        self.table.insert(parent='',index='end',iid=3,text='',
-        values=('4','Dragon','104','New York' , 'White Plains'))
-        self.table.insert(parent='',index='end',iid=4,text='',
-        values=('5','CrissCross','105','California', 'San Diego'))
+        self.insertar_fila(('1','Ninja','101','Oklahoma', 'Moore'))
+        self.insertar_fila(('2','Ranger','102','Wisconsin', 'Green Bay'))
+        self.insertar_fila(('3','Deamon','103', 'California', 'Placentia'))
+        self.insertar_fila(('4','Dragon','104','New York' , 'White Plains'))
+        self.insertar_fila(('5','CrissCross','105','California', 'San Diego'))
 
-        
-        self.table.insert(parent='',index='end',
-        values=('5','asdasd','105','asdasd', 'San ad'))
-        self.table.insert(parent='',index='end',
-        values=('5','asdasd','105','asdasd', 'San ad'))
-        self.table.insert(parent='',index='end',
-        values=('5','asdasd','105','asdasd', 'San ad'))
-        self.table.insert(parent='',index='end',
-        values=('5','asdasd','105','asdasd', 'San ad'))
-        self.table.insert(parent='',index='end',
-        values=('5','asdasd','105','asdasd', 'San ad'))
-        self.table.insert(parent='',index='end',
-        values=('5','asdasd','105','asdasd', 'San ad'))
-        self.table.insert(parent='',index='end',
-        values=('5','asdasd','105','asdasd', 'San ad'))
-        self.table.insert(parent='',index='end',
-        values=('5','asdasd','105','asdasd', 'San ad'))
-        self.table.insert(parent='',index='end',
-        values=('5','asdasd','105','asdasd', 'San ad'))
+    def insertar_fila(self, valores):
+        self.tabla.insert(parent='',index='end',text='',
+        values=valores)
 
-
-
+    def insertar_columna(self, texto):
+        self.tabla.column(texto,anchor=W,width=80)
+        self.tabla.heading(texto,text=texto,anchor=W)
 
 if __name__ == "__main__":
     app = AppPing()
