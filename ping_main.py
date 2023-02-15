@@ -18,14 +18,25 @@ class AppPing(Frame):
         self.master['bg'] = '#AC99F2'
         self.pack(expand=True,fill=BOTH)
 
+
         menu = LabelFrame(self,text="Opciones")
         menu.grid(column=2,row=0,sticky=S+N+E+W)
 
-        texto_label = Label(menu,text="Tasa de verificación")
-        texto_label.pack(side=TOP)
-        texto = Entry(menu)
-        texto.pack(side=TOP,padx = 10, pady = 5)
+        label_nombre = Label(menu,text="Nombre")
+        label_nombre.pack(side=TOP)
+        self.entry_nombre = Entry(menu)
+        self.entry_nombre.pack(side=TOP,padx = 10, pady = 5)
 
+        label_ip = Label(menu,text="IP")
+        label_ip.pack(side=TOP)
+        self.entry_ip = Entry(menu)
+        self.entry_ip.pack(side=TOP,padx = 10, pady = 5)
+
+        button_agregar = Button(menu,text="Agregar",command=lambda: self.insertar_fila((self.entry_nombre.get(),self.entry_ip.get(),"Desconectado")))
+        button_agregar.pack(side=TOP)
+
+        self.label_error = Label(menu,text="",fg="red")
+        self.label_error.pack(side=TOP)
 
 
         tabla_scrolly = Scrollbar(self)
@@ -62,7 +73,7 @@ class AppPing(Frame):
         self.insertar_columna("estado")
 
         #add data 
-        self.check()
+        # self.check()
 
     def select(self,*args):
         curItem = self.tabla.focus()
@@ -74,15 +85,24 @@ class AppPing(Frame):
         Label(newWindow, text =textItem).pack()
 
     def insertar_fila(self, valores):
-        self.tabla.insert(parent='',index='end',text='',
-        values=valores)
+        texto = StringVar()
+        for child in self.tabla.get_children():
+            if self.tabla.item(child)["values"][0] == valores[0] or self.tabla.item(child)["values"][1] == valores[1]:
+                texto.set("Error: no repetir nombres/ips")
+                self.label_error.config(textvariable=texto)
+                return
+        self.tabla.insert(parent='',index='end',text='',values=valores)
+        self.entry_nombre.delete(first=0,last=END)
+        self.entry_ip.delete(first=0,last=END)
+        texto.set("")
+        self.label_error.config(textvariable=texto)
 
     def insertar_columna(self, texto):
         self.tabla.column(texto,anchor=W,width=80)
         self.tabla.heading(texto,text=texto,anchor=W)
     
-    def check(self):
-        self.insertar_fila()
+    # def check(self):
+    #     self.insertar_fila()
 
     def quit(self):
         Frame.quit(self)
