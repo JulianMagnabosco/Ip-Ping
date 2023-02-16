@@ -63,17 +63,7 @@ class AppPing(Frame):
 
         #define our column
 
-        self.tabla['columns'] = ('nombre', 'ip', 'estado')
-
-        # format our column
-        self.tabla.column("#0", width=0,  stretch=NO)
-        self.tabla.heading("#0",text="",anchor=W)
-        self.insertar_columna("nombre")
-        self.insertar_columna("ip")
-        self.insertar_columna("estado")
-
-        #add data 
-        # self.check()
+        self.crear_columnas(["nombre","ip","estado"])
 
     def select(self,*args):
         curItem = self.tabla.focus()
@@ -97,12 +87,16 @@ class AppPing(Frame):
         texto.set("")
         self.label_error.config(textvariable=texto)
 
-    def insertar_columna(self, texto):
-        self.tabla.column(texto,anchor=W,width=80)
-        self.tabla.heading(texto,text=texto,anchor=W)
+    def crear_columnas(self, columnas):
+        self.tabla['columns'] = tuple(columnas)
+
+        # format our column
+        self.tabla.column("#0", width=0,  stretch=NO)
+        self.tabla.heading("#0",text="",anchor=W)
+        for c in columnas:
+            self.tabla.column(c,anchor=W,width=80)
+            self.tabla.heading(c,text=str(c).upper(),anchor=W)
     
-    # def check(self):
-    #     self.insertar_fila()
 
     def quit(self):
         Frame.quit(self)
