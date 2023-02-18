@@ -8,16 +8,22 @@
 # else:
 #   print (f"{hostname} is down!")
 
+import os
 import pickle
+import threading
 from tkinter import *
 from  tkinter import ttk
+
+class RepeatingThread(threading.Timer):
+    def run(self):
+        while not self.finished.wait(self.interval):
+            self.function( *self.args,**self.kwargs)
 
 class AppPing(Frame):
     def __init__(self,master=None) -> None:
         Frame.__init__(self,master)
         self.master['bg'] = '#AC99F2'
         self.pack(expand=True,fill=BOTH)
-
 
         menu = LabelFrame(self,text="Opciones")
         menu.grid(column=2,row=0,sticky=S+N+E+W)
@@ -65,6 +71,12 @@ class AppPing(Frame):
 
         self.crear_columnas(["nombre","ip","estado"])
 
+        #Chequeo
+
+        self.timer = RepeatingThread(10, self.check)
+        self.check()
+        self.timer.start()
+
     def select(self,*args):
         curItem = self.tabla.focus()
         textItem = self.tabla.item(curItem)["values"]
@@ -99,7 +111,19 @@ class AppPing(Frame):
     
 
     def quit(self):
+        self.timer.cancel()
         Frame.quit(self)
+
+    def check(self):
+        hostname = "google.com" #example
+        response = os.system("ping " + hostname)
+
+        #and then check the response...
+        if response == 0:
+            print ("{hostname} is up!")
+        else:
+            print ("{hostname} is down!")
+            
 
 
 if __name__ == "__main__":
