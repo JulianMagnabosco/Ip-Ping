@@ -96,6 +96,7 @@ class AppPing(Frame):
         self.tabla.insert(parent='',index='end',text='',values=valores)
         self.entry_nombre.delete(first=0,last=END)
         self.entry_ip.delete(first=0,last=END)
+
         texto.set("")
         self.label_error.config(textvariable=texto)
 
@@ -115,16 +116,15 @@ class AppPing(Frame):
         Frame.quit(self)
 
     def check(self):
-        hostname = "google.com" #example
-        response = os.system("ping " + hostname)
+        for child in self.tabla.get_children():
+            host = self.tabla.item(child)["values"][1] #example
+            respuesta = os.system("ping " + host)
+            if respuesta == 0: estado="Conectado"
+            else : estado="Desconectado"
 
-        #and then check the response...
-        if response == 0:
-            print ("{hostname} is up!")
-        else:
-            print ("{hostname} is down!")
-            
-
+            self.tabla.item(child,text="",values=(self.tabla.item(child)["values"][0],
+                                                host,
+                                                estado))
 
 if __name__ == "__main__":
     app = AppPing()
