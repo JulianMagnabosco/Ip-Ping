@@ -25,6 +25,8 @@ class AppPing(Frame):
         self.master['bg'] = '#AC99F2'
         self.pack(expand=True,fill=BOTH)
 
+        #menu derecho
+
         menu = LabelFrame(self,text="Opciones")
         menu.grid(column=2,row=0,sticky=S+N+E+W)
 
@@ -44,6 +46,7 @@ class AppPing(Frame):
         self.label_error = Label(menu,text="",fg="red")
         self.label_error.pack(side=TOP)
 
+        #desplegable
 
         tabla_scrolly = Scrollbar(self)
         tabla_scrolly.grid(column=1,row=0,sticky=N+S)
@@ -54,11 +57,10 @@ class AppPing(Frame):
         agarre = ttk.Sizegrip(self)
         agarre.grid(column=2,row=1,sticky=S+E)
         
-
+        #configurar tabla
 
         self.tabla = ttk.Treeview(self,yscrollcommand=tabla_scrolly.set, xscrollcommand =tabla_scrollx.set)
         self.tabla.bind('<Double-Button-1>', self.select)
-
 
         self.tabla.grid(column=0,row=0,sticky=S+N+E+W)
         self.columnconfigure(0,weight=1)
@@ -67,11 +69,17 @@ class AppPing(Frame):
         tabla_scrolly.config(command=self.tabla.yview)
         tabla_scrollx.config(command=self.tabla.xview)
 
-        #define our column
+        #crear columnas
 
         self.crear_columnas(["nombre","ip","estado"])
 
-        #Chequeo
+        with open("data",mode="+ab") as archivo:
+            archivo.seek(0)
+            datos = pickle.load(archivo)
+            for dato in datos:
+                self.tabla.insert(parent='',index='end',text='',values=dato)
+
+        #Chequeos
 
         self.timer = RepeatingThread(10, self.check)
         self.check()
@@ -99,6 +107,7 @@ class AppPing(Frame):
 
         texto.set("")
         self.label_error.config(textvariable=texto)
+        self.check()
 
     def crear_columnas(self, columnas):
         self.tabla['columns'] = tuple(columnas)
@@ -116,15 +125,20 @@ class AppPing(Frame):
         Frame.quit(self)
 
     def check(self):
-        for child in self.tabla.get_children():
-            host = self.tabla.item(child)["values"][1] #example
-            respuesta = os.system("ping " + host)
-            if respuesta == 0: estado="Conectado"
-            else : estado="Desconectado"
+        with open("data",mode="wb") as archivo:
+            datos = list()
+            for child in self.tabla.get_children():
+                datos.append(self.tabla.item(child)["values"])
+            pickle.dump(datos,archivo)
+        # for child in self.tabla.get_children():
+        #     host = self.tabla.item(child)["values"][1] #example
+            # respuesta = os.system("ping " + host)
+            # if respuesta == 0: estado="Conectado"
+            # else : estado="Desconectado"
 
-            self.tabla.item(child,text="",values=(self.tabla.item(child)["values"][0],
-                                                host,
-                                                estado))
+            # self.tabla.item(child,text="",values=(self.tabla.item(child)["values"][0],
+            #                                     host,
+            #                                     estado))
 
 if __name__ == "__main__":
     app = AppPing()
