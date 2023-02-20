@@ -108,6 +108,7 @@ class AppPing(Frame):
         texto.set("")
         self.label_error.config(textvariable=texto)
         self.check()
+        self.guardar()
 
     def crear_columnas(self, columnas):
         self.tabla['columns'] = tuple(columnas)
@@ -124,21 +125,23 @@ class AppPing(Frame):
         self.timer.cancel()
         Frame.quit(self)
 
-    def check(self):
+    def guardar(self):
         with open("data",mode="wb") as archivo:
             datos = list()
             for child in self.tabla.get_children():
                 datos.append(self.tabla.item(child)["values"])
             pickle.dump(datos,archivo)
-        # for child in self.tabla.get_children():
-        #     host = self.tabla.item(child)["values"][1] #example
-            # respuesta = os.system("ping " + host)
-            # if respuesta == 0: estado="Conectado"
-            # else : estado="Desconectado"
+    
+    def check(self):
+        for child in self.tabla.get_children():
+            host = self.tabla.item(child)["values"][1] #example
+            respuesta = os.system("ping " + str(host))
+            if respuesta == 0: estado="Conectado"
+            else : estado="Desconectado"
 
-            # self.tabla.item(child,text="",values=(self.tabla.item(child)["values"][0],
-            #                                     host,
-            #                                     estado))
+            self.tabla.item(child,text="",values=(self.tabla.item(child)["values"][0],
+                                                host,
+                                                estado))
 
 if __name__ == "__main__":
     app = AppPing()
