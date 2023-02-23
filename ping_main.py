@@ -1,13 +1,3 @@
-# import os
-# hostname = "google.com" #example
-# response = os.system("ping " + hostname)
-
-# #and then check the response...
-# if response == 0:
-#   print (f"{hostname} is up!")
-# else:
-#   print (f"{hostname} is down!")
-
 import os
 import pickle
 import threading
@@ -60,7 +50,7 @@ class AppPing(Frame):
         #configurar tabla
 
         self.tabla = ttk.Treeview(self,yscrollcommand=tabla_scrolly.set, xscrollcommand =tabla_scrollx.set)
-        self.tabla.bind('<Double-Button-1>', self.select)
+        self.tabla.bind('<Double-Button-1>', self.seleccionar)
 
         self.tabla.grid(column=0,row=0,sticky=S+N+E+W)
         self.columnconfigure(0,weight=1)
@@ -81,18 +71,30 @@ class AppPing(Frame):
 
         #Chequeos
 
-        self.timer = RepeatingThread(10, self.check)
+        self.timer = RepeatingThread(100, self.check)
         self.check()
         self.timer.start()
 
-    def select(self,*args):
-        curItem = self.tabla.focus()
-        textItem = self.tabla.item(curItem)["values"]
-        print (textItem)
+    def seleccionar(self,*args):
+        item = self.tabla.focus()
+        valores_item = self.tabla.item(item)["values"]
         
-        newWindow = Toplevel(self.master)
-        newWindow.title("New Window")
-        Label(newWindow, text =textItem).pack()
+        ventana = Toplevel(self.master)
+        ventana.title("Editar")
+        ventana.focus_force()
+        ventana.wm_attributes("-topmost", True)
+        
+        Label(ventana, text ="Nombre").pack()
+        nuevo_nombre = Entry(ventana, textvariable =valores_item[0])
+        nuevo_nombre.pack()
+        Label(ventana, text ="textItem").pack()
+        nuevo_ip = Entry(ventana, textvariable=valores_item[1])
+        nuevo_ip.pack()
+        Button(ventana, text ="Guardar", command=lambda: self.editar(item,(nuevo_nombre.get(),nuevo_ip.get(),valores_item[2]))).pack()
+        
+    def editar(self, fila, datos):
+        self.tabla.item(fila,text="",values=datos)
+        self.guardar()
 
     def insertar_fila(self, valores):
         texto = StringVar()
@@ -138,10 +140,12 @@ class AppPing(Frame):
             respuesta = os.system("ping " + str(host))
             if respuesta == 0: estado="Conectado"
             else : estado="Desconectado"
-
-            self.tabla.item(child,text="",values=(self.tabla.item(child)["values"][0],
+            try:
+                self.tabla.item(child,text="",values=(self.tabla.item(child)["values"][0],
                                                 host,
                                                 estado))
+            except:
+                break
 
 if __name__ == "__main__":
     app = AppPing()
