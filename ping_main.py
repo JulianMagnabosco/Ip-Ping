@@ -14,7 +14,7 @@ class AppPing(Frame):
         Frame.__init__(self,master)
         self.master['bg'] = '#AC99F2'
         self.pack(expand=True,fill=BOTH)
-
+        self.ventana_edicion = None
         #menu derecho
 
         menu = LabelFrame(self,text="Opciones")
@@ -75,22 +75,28 @@ class AppPing(Frame):
         self.check()
         self.timer.start()
 
-    def seleccionar(self,*args):
+    def seleccionar(self,event):
         item = self.tabla.focus()
         valores_item = self.tabla.item(item)["values"]
         
-        ventana = Toplevel(self.master)
-        ventana.title("Editar")
-        ventana.focus_force()
-        ventana.wm_attributes("-topmost", True)
+        if self.ventana_edicion:
+            self.ventana_edicion.destroy()
+        self.ventana_edicion = Toplevel(self.master)
+        self.ventana_edicion.title("Editar")
+        self.ventana_edicion.geometry(f"100x100+{event.x}+{event.y}")
+        self.ventana_edicion.focus_force()
+        self.ventana_edicion.wm_attributes("-topmost", True)
         
-        Label(ventana, text ="Nombre").pack()
-        nuevo_nombre = Entry(ventana, textvariable =valores_item[0])
+        Label(self.ventana_edicion, text ="Nombre").pack()
+        nuevo_nombre = Entry(self.ventana_edicion)
+        nuevo_nombre.insert(0,valores_item[0])
         nuevo_nombre.pack()
-        Label(ventana, text ="textItem").pack()
-        nuevo_ip = Entry(ventana, textvariable=valores_item[1])
+        Label(self.ventana_edicion, text ="textItem").pack()
+        nuevo_ip = Entry(self.ventana_edicion)
+        nuevo_ip.insert(0,valores_item[1])
         nuevo_ip.pack()
-        Button(ventana, text ="Guardar", command=lambda: self.editar(item,(nuevo_nombre.get(),nuevo_ip.get(),valores_item[2]))).pack()
+        Button(self.ventana_edicion, text ="Guardar", command=lambda: self.editar(item,(nuevo_nombre.get(),nuevo_ip.get(),valores_item[2]))).pack()
+        Button(self.ventana_edicion, text ="Borrar", command=lambda: self.editar(item,(nuevo_nombre.get(),nuevo_ip.get(),valores_item[2]))).pack()
         
     def editar(self, fila, datos):
         self.tabla.item(fila,text="",values=datos)
