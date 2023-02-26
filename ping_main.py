@@ -15,46 +15,54 @@ class AppPing(Frame):
         self.master['bg'] = '#AC99F2'
         self.pack(expand=True,fill=BOTH)
         self.ventana_edicion = None
-        #menu derecho
+
+        #menu pop up
+
+        self.popup_m = Menu(self, tearoff = 0)
+        self.popup_m.add_command(label ="Editar",command=)
+        self.popup_m.add_command(label ="Eliminar")
+
+        #menu de agregado
 
         menu = LabelFrame(self,text="Opciones")
-        menu.grid(column=2,row=0,sticky=S+N+E+W)
+        menu.grid(column=0,row=0,sticky=S+N+E+W)
 
         label_nombre = Label(menu,text="Nombre")
-        label_nombre.pack(side=TOP)
+        label_nombre.pack(side=LEFT)
         self.entry_nombre = Entry(menu)
-        self.entry_nombre.pack(side=TOP,padx = 10, pady = 5)
+        self.entry_nombre.pack(side=LEFT,padx = 10, pady = 5)
 
         label_ip = Label(menu,text="IP")
-        label_ip.pack(side=TOP)
+        label_ip.pack(side=LEFT)
         self.entry_ip = Entry(menu)
-        self.entry_ip.pack(side=TOP,padx = 10, pady = 5)
+        self.entry_ip.pack(side=LEFT,padx = 10, pady = 5)
 
         button_agregar = Button(menu,text="Agregar",command=lambda: self.insertar_fila((self.entry_nombre.get(),self.entry_ip.get(),"Desconectado")))
-        button_agregar.pack(side=TOP)
+        button_agregar.pack(side=LEFT)
 
         self.label_error = Label(menu,text="",fg="red")
-        self.label_error.pack(side=TOP)
+        self.label_error.pack(side=LEFT)
 
         #desplegable
 
         tabla_scrolly = Scrollbar(self)
-        tabla_scrolly.grid(column=1,row=0,sticky=N+S)
+        tabla_scrolly.grid(column=1,row=1,sticky=N+S)
 
         tabla_scrollx = Scrollbar(self,orient='horizontal')
-        tabla_scrollx.grid(column=0,row=1,sticky=W+E)
+        tabla_scrollx.grid(column=0,row=2,sticky=W+E)
 
         agarre = ttk.Sizegrip(self)
-        agarre.grid(column=2,row=1,sticky=S+E)
+        agarre.grid(column=1,row=2,sticky=S+E)
         
         #configurar tabla
 
         self.tabla = ttk.Treeview(self,yscrollcommand=tabla_scrolly.set, xscrollcommand =tabla_scrollx.set)
         self.tabla.bind('<Double-Button-1>', self.seleccionar)
+        self.tabla.bind('<Button-2>', self.popup_menu)
 
-        self.tabla.grid(column=0,row=0,sticky=S+N+E+W)
+        self.tabla.grid(column=0,row=1,sticky=S+N+E+W)
         self.columnconfigure(0,weight=1)
-        self.rowconfigure(0,weight=1)
+        self.rowconfigure(1,weight=1)
 
         tabla_scrolly.config(command=self.tabla.yview)
         tabla_scrollx.config(command=self.tabla.xview)
@@ -74,6 +82,12 @@ class AppPing(Frame):
         self.timer = RepeatingThread(100, self.check)
         self.check()
         self.timer.start()
+
+    def popup_menu(self,event):
+        try:
+            self.popup_m.tk_popup(event.x_root, event.y_root)
+        finally:
+            self.popup_m.grab_release()
 
     def seleccionar(self,event):
         item = self.tabla.focus()
@@ -143,15 +157,15 @@ class AppPing(Frame):
     def check(self):
         for child in self.tabla.get_children():
             host = self.tabla.item(child)["values"][1] #example
-            respuesta = os.system("ping " + str(host))
-            if respuesta == 0: estado="Conectado"
-            else : estado="Desconectado"
-            try:
-                self.tabla.item(child,text="",values=(self.tabla.item(child)["values"][0],
-                                                host,
-                                                estado))
-            except:
-                break
+            # respuesta = os.system("ping " + str(host))
+            # if respuesta == 0: estado="Conectado"
+            # else : estado="Desconectado"
+            # try:
+            #     self.tabla.item(child,text="",values=(self.tabla.item(child)["values"][0],
+            #                                     host,
+            #                                     estado))
+            # except:
+            #     break
 
 if __name__ == "__main__":
     app = AppPing()
