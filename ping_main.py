@@ -15,12 +15,13 @@ class AppPing(Frame):
         self.master['bg'] = '#AC99F2'
         self.pack(expand=True,fill=BOTH)
         self.ventana_edicion = None
+        self.mouse_pos = (0,0)
 
         #menu pop up
 
         self.popup_m = Menu(self, tearoff = 0)
-        self.popup_m.add_command(label ="Editar",command=)
-        self.popup_m.add_command(label ="Eliminar")
+        self.popup_m.add_command(label ="Editar", command=self.seleccionar)
+        self.popup_m.add_command(label ="Eliminar", command=self.eliminar)
 
         #menu de agregado
 
@@ -58,7 +59,8 @@ class AppPing(Frame):
 
         self.tabla = ttk.Treeview(self,yscrollcommand=tabla_scrolly.set, xscrollcommand =tabla_scrollx.set)
         self.tabla.bind('<Double-Button-1>', self.seleccionar)
-        self.tabla.bind('<Button-2>', self.popup_menu)
+        self.tabla.bind('<Button-3>', self.popup_menu)
+        self.tabla.bind("<Motion>",self.mouse)
 
         self.tabla.grid(column=0,row=1,sticky=S+N+E+W)
         self.columnconfigure(0,weight=1)
@@ -83,37 +85,46 @@ class AppPing(Frame):
         self.check()
         self.timer.start()
 
+    def mouse(self,event):
+        self.mouse_pos = (event.x_root,event.y_root)
+
     def popup_menu(self,event):
         try:
-            self.popup_m.tk_popup(event.x_root, event.y_root)
+            if self.tabla.focus():
+                self.popup_m.tk_popup(event.x_root, event.y_root)
         finally:
             self.popup_m.grab_release()
 
-    def seleccionar(self,event):
+    def seleccionar(self,*args):
         item = self.tabla.focus()
         valores_item = self.tabla.item(item)["values"]
         
         if self.ventana_edicion:
             self.ventana_edicion.destroy()
         self.ventana_edicion = Toplevel(self.master)
+        self.ventana_edicion.resizable(0,0)
         self.ventana_edicion.title("Editar")
-        self.ventana_edicion.geometry(f"100x100+{event.x}+{event.y}")
+        self.ventana_edicion.geometry(f"+{self.mouse_pos[0]}+{self.mouse_pos[1]}")
         self.ventana_edicion.focus_force()
         self.ventana_edicion.wm_attributes("-topmost", True)
         
         Label(self.ventana_edicion, text ="Nombre").pack()
         nuevo_nombre = Entry(self.ventana_edicion)
         nuevo_nombre.insert(0,valores_item[0])
-        nuevo_nombre.pack()
+        nuevo_nombre.pack(padx=5,pady=5)
         Label(self.ventana_edicion, text ="textItem").pack()
         nuevo_ip = Entry(self.ventana_edicion)
         nuevo_ip.insert(0,valores_item[1])
-        nuevo_ip.pack()
-        Button(self.ventana_edicion, text ="Guardar", command=lambda: self.editar(item,(nuevo_nombre.get(),nuevo_ip.get(),valores_item[2]))).pack()
-        Button(self.ventana_edicion, text ="Borrar", command=lambda: self.editar(item,(nuevo_nombre.get(),nuevo_ip.get(),valores_item[2]))).pack()
+        nuevo_ip.pack(padx=5,pady=5)
+        Button(self.ventana_edicion, text ="Guardar", command=lambda: self.editar(item,(nuevo_nombre.get(),nuevo_ip.get(),valores_item[2]))).pack(padx=5,pady=5)
         
     def editar(self, fila, datos):
         self.tabla.item(fila,text="",values=datos)
+        self.guardar()
+
+    def eliminar(self):
+        item = self.tabla.focus()
+        self.tabla.delete(item)
         self.guardar()
 
     def insertar_fila(self, valores):
