@@ -10,7 +10,12 @@ class RepeatingThread(threading.Timer):
             self.function( *self.args,**self.kwargs)
 
 class AppPing(Frame):
+    Disp_Conectado = "Conectado"
+    Disp_Desconectado = "Desconectado"
+    Disp_Indefinido = "Indefinido"
+
     def __init__(self,master=None) -> None:
+
         Frame.__init__(self,master)
         self.master['bg'] = '#AC99F2'
         self.pack(expand=True,fill=BOTH)
@@ -25,7 +30,7 @@ class AppPing(Frame):
 
         #menu de agregado
 
-        menu = LabelFrame(self,text="Opciones")
+        menu = LabelFrame(self,text="Menu")
         menu.grid(column=0,row=0,sticky=S+N+E+W)
 
         label_nombre = Label(menu,text="Nombre")
@@ -38,13 +43,24 @@ class AppPing(Frame):
         self.entry_ip = Entry(menu)
         self.entry_ip.pack(side=LEFT,padx = 10, pady = 5)
 
-        button_agregar = Button(menu,text="Agregar",command=lambda: self.insertar_fila((self.entry_nombre.get(),self.entry_ip.get(),"Desconectado")))
+        button_agregar = Button(menu,text="Agregar",command=self.insertar_fila)
         button_agregar.pack(side=LEFT)
 
         self.label_error = Label(menu,text="",fg="red")
         self.label_error.pack(side=LEFT)
+        
+        #menu opciones
 
-        #desplegable
+        opciones = LabelFrame(self,text="Opciones")
+        opciones.grid(column=0,row=3,sticky=S+N+E+W)
+
+        button_agregar = Button(opciones,text="Chequear",command=self.check)
+        button_agregar.pack(side=LEFT)
+
+        self.pb = ttk.Progressbar(opciones, orient='horizontal', mode='indeterminate', length=280)
+        self.pb.pack(side=RIGHT)
+
+        #scrollbars y grip
 
         tabla_scrolly = Scrollbar(self)
         tabla_scrolly.grid(column=1,row=1,sticky=N+S)
@@ -58,6 +74,9 @@ class AppPing(Frame):
         #configurar tabla
 
         self.tabla = ttk.Treeview(self,yscrollcommand=tabla_scrolly.set, xscrollcommand =tabla_scrollx.set)
+        self.tabla.tag_configure(self.Disp_Conectado    ,background="#7FA0FE")
+        self.tabla.tag_configure(self.Disp_Desconectado ,background="#FE7F7F")
+        self.tabla.tag_configure(self.Disp_Indefinido   ,background="#DDEDB4")
         self.tabla.bind('<Double-Button-1>', self.seleccionar)
         self.tabla.bind('<Button-3>', self.popup_menu)
         self.tabla.bind("<Motion>",self.mouse)
@@ -127,7 +146,8 @@ class AppPing(Frame):
         self.tabla.delete(item)
         self.guardar()
 
-    def insertar_fila(self, valores):
+    def insertar_fila(self):
+        valores = (self.entry_nombre.get(),self.entry_ip.get(),self.Disp_Indefinido)
         texto = StringVar()
         for child in self.tabla.get_children():
             if self.tabla.item(child)["values"][0] == valores[0] or self.tabla.item(child)["values"][1] == valores[1]:
@@ -166,17 +186,19 @@ class AppPing(Frame):
             pickle.dump(datos,archivo)
     
     def check(self):
+        self.pb.start()
         for child in self.tabla.get_children():
             host = self.tabla.item(child)["values"][1] #example
-            # respuesta = os.system("ping " + str(host))
-            # if respuesta == 0: estado="Conectado"
-            # else : estado="Desconectado"
-            # try:
-            #     self.tabla.item(child,text="",values=(self.tabla.item(child)["values"][0],
-            #                                     host,
-            #                                     estado))
-            # except:
-            #     break
+            respuesta = os.system("ping " + str(host))
+            if respuesta == 0: estado=self.Disp_Conectado
+            else : estado=self.Disp_Desconectado
+            try:
+                self.tabla.item(child,text="",
+                                values=(self.tabla.item(child)["values"][0], host, estado),
+                                tags=(estado))
+            except:
+                break
+        self.pb.stop()
 
 if __name__ == "__main__":
     app = AppPing()
