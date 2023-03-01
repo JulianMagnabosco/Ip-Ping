@@ -1,10 +1,11 @@
-import os
+from pythonping import ping
 import pickle
 import threading
 from tkinter import *
 from  tkinter import ttk
 
 class RepeatingThread(threading.Timer):
+    
     def run(self):
         while not self.finished.wait(self.interval):
             self.function( *self.args,**self.kwargs)
@@ -101,7 +102,7 @@ class AppPing(Frame):
         #Chequeos
 
         self.timer = RepeatingThread(100, self.check)
-        self.check()
+        # self.check()
         self.timer.start()
 
     def mouse(self,event):
@@ -149,6 +150,10 @@ class AppPing(Frame):
     def insertar_fila(self):
         valores = (self.entry_nombre.get(),self.entry_ip.get(),self.Disp_Indefinido)
         texto = StringVar()
+        if len(valores[1].split(".")) != 4:
+            texto.set("Error: ip incorrecta")
+            self.label_error.config(textvariable=texto)
+            return
         for child in self.tabla.get_children():
             if self.tabla.item(child)["values"][0] == valores[0] or self.tabla.item(child)["values"][1] == valores[1]:
                 texto.set("Error: no repetir nombres/ips")
@@ -189,7 +194,7 @@ class AppPing(Frame):
         self.pb.start()
         for child in self.tabla.get_children():
             host = self.tabla.item(child)["values"][1] #example
-            respuesta = os.system("ping " + str(host))
+            respuesta = ping(str(host), verbose=False, count=4)
             if respuesta == 0: estado=self.Disp_Conectado
             else : estado=self.Disp_Desconectado
             try:
