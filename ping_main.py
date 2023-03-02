@@ -29,10 +29,13 @@ class AppPing(Frame):
         self.popup_m.add_command(label ="Editar", command=self.seleccionar)
         self.popup_m.add_command(label ="Eliminar", command=self.eliminar)
 
-        #menu de agregado
+        #menu superior
 
         menu = LabelFrame(self,text="Menu")
         menu.grid(column=0,row=0,sticky=S+N+E+W)
+
+        self.button_chequear= Button(menu,text="Chequear",command=self.check)
+        self.button_chequear.pack(side=LEFT, padx=10, ipadx=30)
 
         label_nombre = Label(menu,text="Nombre")
         label_nombre.pack(side=LEFT)
@@ -50,16 +53,13 @@ class AppPing(Frame):
         self.label_error = Label(menu,text="",fg="red")
         self.label_error.pack(side=LEFT)
         
-        #menu opciones
+        #barra inferior
 
-        opciones = LabelFrame(self,text="Opciones")
+        opciones = Frame(self)
         opciones.grid(column=0,row=3,sticky=S+N+E+W)
 
-        self.button_chequear= Button(opciones,text="Chequear",command=self.check)
-        self.button_chequear.pack(side=LEFT)
-
-        self.pb = ttk.Progressbar(opciones, orient='horizontal', mode='indeterminate', length=280)
-        self.pb.pack(side=RIGHT)
+        self.pb = ttk.Progressbar(opciones, orient='horizontal', mode='indeterminate', length=150)
+        self.pb.pack(side=LEFT)
 
         #scrollbars y grip
 
@@ -70,7 +70,7 @@ class AppPing(Frame):
         tabla_scrollx.grid(column=0,row=2,sticky=W+E)
 
         agarre = ttk.Sizegrip(self)
-        agarre.grid(column=1,row=2,sticky=S+E)
+        agarre.grid(column=1,row=3,sticky=S+E)
         
         #configurar tabla
 
@@ -94,8 +94,8 @@ class AppPing(Frame):
         with open("data",mode="+ab") as archivo:
             archivo.seek(0)
             datos = pickle.load(archivo)
-            for dato in datos:
-                self.tabla.insert(parent='',index='end',text='',values=dato)
+            for fila in datos:
+                self.tabla.insert(parent='',index='end',text='',values=fila,tags=fila[2])
 
         #Chequeos
 
@@ -130,6 +130,8 @@ class AppPing(Frame):
 
     def seleccionar(self,*args):
         item = self.tabla.focus()
+        if not item:
+            return
         valores_item = self.tabla.item(item)["values"]
         
         if self.ventana_edicion:
@@ -153,6 +155,7 @@ class AppPing(Frame):
         
     def editar(self, fila, datos):
         self.tabla.item(fila,text="",values=datos)
+        self.ventana_edicion.destroy()
         self.guardar()
 
     def eliminar(self):
@@ -178,7 +181,7 @@ class AppPing(Frame):
 
         texto.set("")
         self.label_error.config(textvariable=texto)
-        self.check()
+        # self.check()
         self.guardar()
 
     def crear_columnas(self, columnas):
@@ -220,7 +223,7 @@ class AppPing(Frame):
         self.enable(True)
 
     def check(self):
-        self.pb.start()
+        self.pb.start(5)
         self.enable(False)
 
         t = threading.Thread(target=self.hacer_ping)
