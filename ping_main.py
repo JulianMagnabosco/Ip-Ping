@@ -44,8 +44,8 @@ class AppPing(Frame):
         self.entry_ip = Entry(menu)
         self.entry_ip.pack(side=LEFT,padx = 10, pady = 5)
 
-        button_agregar = Button(menu,text="Agregar",command=self.insertar_fila)
-        button_agregar.pack(side=LEFT)
+        self.button_agregar = Button(menu,text="Agregar",command=self.insertar_fila)
+        self.button_agregar.pack(side=LEFT)
 
         self.label_error = Label(menu,text="",fg="red")
         self.label_error.pack(side=LEFT)
@@ -55,8 +55,8 @@ class AppPing(Frame):
         opciones = LabelFrame(self,text="Opciones")
         opciones.grid(column=0,row=3,sticky=S+N+E+W)
 
-        button_agregar = Button(opciones,text="Chequear",command=self.check)
-        button_agregar.pack(side=LEFT)
+        self.button_chequear= Button(opciones,text="Chequear",command=self.check)
+        self.button_chequear.pack(side=LEFT)
 
         self.pb = ttk.Progressbar(opciones, orient='horizontal', mode='indeterminate', length=280)
         self.pb.pack(side=RIGHT)
@@ -78,9 +78,7 @@ class AppPing(Frame):
         self.tabla.tag_configure(self.Disp_Conectado    ,background="#7FA0FE")
         self.tabla.tag_configure(self.Disp_Desconectado ,background="#FE7F7F")
         self.tabla.tag_configure(self.Disp_Indefinido   ,background="#DDEDB4")
-        self.tabla.bind('<Double-Button-1>', self.seleccionar)
-        self.tabla.bind('<Button-3>', self.popup_menu)
-        self.tabla.bind("<Motion>",self.mouse)
+        self.enable(True)
 
         self.tabla.grid(column=0,row=1,sticky=S+N+E+W)
         self.columnconfigure(0,weight=1)
@@ -104,6 +102,21 @@ class AppPing(Frame):
         self.timer = RepeatingThread(100, self.check)
         # self.check()
         self.timer.start()
+
+    
+    def enable(self,bool):
+        if bool:
+            self.button_agregar.configure(state="normal")
+            self.button_chequear.configure(state="normal")
+            self.tabla.bind('<Double-Button-1>', self.seleccionar)
+            self.tabla.bind('<Button-3>', self.popup_menu)
+            self.tabla.bind("<Motion>",self.mouse)
+        else:
+            self.button_agregar.configure(state="disabled")
+            self.button_chequear.configure(state="disabled")
+            self.tabla.unbind_all('<Double-Button-1>')
+            self.tabla.unbind_all('<Button-3>')
+            self.tabla.unbind_all("<Motion>")
 
     def mouse(self,event):
         self.mouse_pos = (event.x_root,event.y_root)
@@ -190,8 +203,7 @@ class AppPing(Frame):
                 datos.append(self.tabla.item(child)["values"])
             pickle.dump(datos,archivo)
     
-    def check(self):
-        self.pb.start()
+    def hacer_ping(self):
         for child in self.tabla.get_children():
             host = self.tabla.item(child)["values"][1] #example
             respuesta = ping(str(host), verbose=False, count=4)
@@ -203,7 +215,16 @@ class AppPing(Frame):
                                 tags=(estado))
             except:
                 break
+        
         self.pb.stop()
+        self.enable(True)
+
+    def check(self):
+        self.pb.start()
+        self.enable(False)
+
+        t = threading.Thread(target=self.hacer_ping)
+        t.start()
 
 if __name__ == "__main__":
     app = AppPing()
