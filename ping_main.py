@@ -4,11 +4,33 @@ import threading
 from tkinter import *
 from  tkinter import ttk
 
+class Options():
+    intervalo=10
+    tamanio_p=60
+    ping_menor=15
+    ping_medio=50
+    ips = list()
+
 class RepeatingThread(threading.Timer):
     
     def run(self):
         while not self.finished.wait(self.interval):
             self.function( *self.args,**self.kwargs)
+
+class MenuOptions(Toplevel):
+    def __init__(self,master=None):
+        
+        Toplevel.__init__(self,master)
+
+        
+        label_intervalo=Label(self,text="Intervalo de chequeo")
+        label_intervalo.pack()
+        label_tamanio_p=Label(self,text="Tamaño de paquetes")
+        label_ping_menor=Label(self,text="Ping de chequeo")
+        label_ping_medio=Label(self,text="Intervalo de chequeo")
+
+        
+
 
 class AppPing(Frame):
     Disp_Conectado = "Conectado"
@@ -18,10 +40,11 @@ class AppPing(Frame):
     def __init__(self,master=None) -> None:
 
         Frame.__init__(self,master)
-        self.master['bg'] = '#AC99F2'
         self.pack(expand=True,fill=BOTH)
         self.ventana_edicion = None
         self.mouse_pos = (0,0)
+        self.opciones = Options()
+        self.menu_opciones = MenuOptions()
 
         #menu pop up
 
@@ -55,11 +78,17 @@ class AppPing(Frame):
         
         #barra inferior
 
-        opciones = Frame(self)
-        opciones.grid(column=0,row=3,sticky=S+N+E+W)
+        b_inferior = Frame(self)
+        b_inferior.grid(column=0,row=3,sticky=S+N+E+W)
 
-        self.pb = ttk.Progressbar(opciones, orient='horizontal', mode='indeterminate', length=150)
-        self.pb.pack(side=LEFT)
+        self.button_opciones= Button(b_inferior,text="Opciones",command=self.abrir_opciones)
+        self.button_opciones.pack(side=LEFT, padx=10, ipadx=30)
+
+        self.pb = ttk.Progressbar(b_inferior, orient='horizontal', mode='indeterminate', length=150)
+        self.pb.pack(side=LEFT,expand=True,fill=X, padx=5, pady=5)
+
+        self.label_actualizado= Label(b_inferior,text="",fg="green")
+        self.label_actualizado.pack(side=LEFT)
 
         #scrollbars y grip
 
@@ -92,10 +121,14 @@ class AppPing(Frame):
         self.crear_columnas(["nombre","ip","estado"])
 
         with open("data",mode="+ab") as archivo:
-            archivo.seek(0)
-            datos = pickle.load(archivo)
-            for fila in datos:
-                self.tabla.insert(parent='',index='end',text='',values=fila,tags=fila[2])
+            try:
+                archivo.seek(0)
+                self.opciones = pickle.load(archivo)
+
+                for fila in self.opciones.ips:
+                    self.tabla.insert(parent='',index='end',text='',values=fila,tags=fila[2])
+            except:
+                pass
 
         #Chequeos
 
@@ -108,12 +141,14 @@ class AppPing(Frame):
         if bool:
             self.button_agregar.configure(state="normal")
             self.button_chequear.configure(state="normal")
+            self.button_opciones.configure(state="normal")
             self.tabla.bind('<Double-Button-1>', self.seleccionar)
             self.tabla.bind('<Button-3>', self.popup_menu)
             self.tabla.bind("<Motion>",self.mouse)
         else:
             self.button_agregar.configure(state="disabled")
             self.button_chequear.configure(state="disabled")
+            self.button_opciones.configure(state="disabled")
             self.tabla.unbind_all('<Double-Button-1>')
             self.tabla.unbind_all('<Button-3>')
             self.tabla.unbind_all("<Motion>")
@@ -163,26 +198,37 @@ class AppPing(Frame):
         self.tabla.delete(item)
         self.guardar()
 
+    def abrir_opciones(self):
+        if self.menu_opciones:
+            self.menu_opciones.destroy()
+        self.menu_opciones.title("Editar")
+
+
+    def validar_ip(self,nombre,ip):
+        if len(ip.split(".")) != 4:
+            return 1
+        for child in self.tabla.get_children():
+            if self.tabla.item(child)["values"][0] == nombre or self.tabla.item(child)["values"][1] == ip:
+                return 2
+        return 0
+
     def insertar_fila(self):
         valores = (self.entry_nombre.get(),self.entry_ip.get(),self.Disp_Indefinido)
         texto = StringVar()
-        if len(valores[1].split(".")) != 4:
-            texto.set("Error: ip incorrecta")
-            self.label_error.config(textvariable=texto)
-            return
-        for child in self.tabla.get_children():
-            if self.tabla.item(child)["values"][0] == valores[0] or self.tabla.item(child)["values"][1] == valores[1]:
-                texto.set("Error: no repetir nombres/ips")
-                self.label_error.config(textvariable=texto)
-                return
-        self.tabla.insert(parent='',index='end',text='',values=valores)
-        self.entry_nombre.delete(first=0,last=END)
-        self.entry_ip.delete(first=0,last=END)
+        resultado = self.validar_ip(valores[0],valores[1]) 
 
-        texto.set("")
+        if resultado == 0:
+            self.tabla.insert(parent='',index='end',text='',values=valores)
+            self.entry_nombre.delete(first=0,last=END)
+            self.entry_ip.delete(first=0,last=END)
+            self.check()
+        elif resultado == 1:
+            texto.set("Error: ip incorrecta")
+        elif resultado == 2:
+            texto.set("Error: no repetir nombres/ips")
         self.label_error.config(textvariable=texto)
-        # self.check()
-        self.guardar()
+
+        
 
     def crear_columnas(self, columnas):
         self.tabla['columns'] = tuple(columnas)
@@ -204,7 +250,8 @@ class AppPing(Frame):
             datos = list()
             for child in self.tabla.get_children():
                 datos.append(self.tabla.item(child)["values"])
-            pickle.dump(datos,archivo)
+            self.opciones.ips = datos
+            pickle.dump(self.opciones,archivo)
     
     def hacer_ping(self):
         for child in self.tabla.get_children():
@@ -221,10 +268,13 @@ class AppPing(Frame):
         
         self.pb.stop()
         self.enable(True)
+        self.label_actualizado.configure(text="Actualizado!")
+        self.guardar()
 
     def check(self):
         self.pb.start(5)
         self.enable(False)
+        self.label_actualizado.configure(text="")
 
         t = threading.Thread(target=self.hacer_ping)
         t.start()
