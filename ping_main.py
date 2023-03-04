@@ -17,20 +17,6 @@ class RepeatingThread(threading.Timer):
         while not self.finished.wait(self.interval):
             self.function( *self.args,**self.kwargs)
 
-class MenuOptions(Toplevel):
-    def __init__(self,master=None):
-        
-        Toplevel.__init__(self,master)
-
-        
-        label_intervalo=Label(self,text="Intervalo de chequeo")
-        label_intervalo.pack()
-        label_tamanio_p=Label(self,text="Tamaño de paquetes")
-        label_ping_menor=Label(self,text="Ping de chequeo")
-        label_ping_medio=Label(self,text="Intervalo de chequeo")
-
-        
-
 
 class AppPing(Frame):
     Disp_Conectado = "Conectado"
@@ -42,9 +28,9 @@ class AppPing(Frame):
         Frame.__init__(self,master)
         self.pack(expand=True,fill=BOTH)
         self.ventana_edicion = None
+        self.menu_opciones = None
         self.mouse_pos = (0,0)
         self.opciones = Options()
-        self.menu_opciones = MenuOptions()
 
         #menu pop up
 
@@ -191,17 +177,52 @@ class AppPing(Frame):
     def editar(self, fila, datos):
         self.tabla.item(fila,text="",values=datos)
         self.ventana_edicion.destroy()
-        self.guardar()
+        datos = list()
+        for child in self.tabla.get_children():
+            datos.append(self.tabla.item(child)["values"])
+        self.opciones.ips = datos
 
     def eliminar(self):
         item = self.tabla.focus()
         self.tabla.delete(item)
-        self.guardar()
+        datos = list()
+        for child in self.tabla.get_children():
+            datos.append(self.tabla.item(child)["values"])
+        self.opciones.ips = datos
 
     def abrir_opciones(self):
         if self.menu_opciones:
             self.menu_opciones.destroy()
-        self.menu_opciones.title("Editar")
+        self.menu_opciones = Toplevel()
+        self.menu_opciones.title("Opciones")
+        self.menu_opciones.resizable(0,0)
+
+        px=15
+        py=8
+        self.v_intervalo = StringVar(value=self.opciones.intervalo)
+        Label(self.menu_opciones,text="Intervalo de chequeo:").grid(row=0,padx=px,pady=py,sticky=E)
+        Entry(self.menu_opciones,textvariable=self.v_intervalo).grid(column=1,row=0,padx=px,pady=py)
+        
+        self.v_tamanio_p =StringVar(value=self.opciones.tamanio_p)
+        Label(self.menu_opciones,text="Tamaño de paquetes:").grid(row=1,padx=px,pady=py,sticky=E)
+        Entry(self.menu_opciones,textvariable=self.v_tamanio_p).grid(column=1,row=1,padx=px,pady=py)
+
+        self.v_ping_menor = StringVar(value=self.opciones.ping_menor)
+        Label(self.menu_opciones,text="Ping de chequeo:").grid(row=2,padx=px,pady=py,sticky=E)
+        Entry(self.menu_opciones,textvariable=self.v_ping_menor).grid(column=1,row=2,padx=px,pady=py)
+
+        self.v_ping_medio =StringVar(value=self.opciones.ping_medio)
+        Label(self.menu_opciones,text="Intervalo de chequeo:").grid(row=3,padx=px,pady=py,sticky=E)
+        Entry(self.menu_opciones,textvariable=self.v_ping_medio).grid(column=1,row=3,padx=px,pady=py)
+
+        Button(self.menu_opciones,text="Guardar",command=self.guardar_opciones).grid(row=4,padx=px,pady=py,columnspan=2)
+    
+    def guardar_opciones(self):
+        self.opciones.intervalo=self.v_intervalo.get()
+        self.opciones.tamanio_p=self.v_tamanio_p.get()
+        self.opciones.ping_menor=self.v_ping_menor.get()
+        self.opciones.ping_medio=self.v_ping_medio.get()
+
 
 
     def validar_ip(self,nombre,ip):
@@ -243,14 +264,11 @@ class AppPing(Frame):
 
     def quit(self):
         self.timer.cancel()
+        self.guardar()
         Frame.quit(self)
 
     def guardar(self):
         with open("data",mode="wb") as archivo:
-            datos = list()
-            for child in self.tabla.get_children():
-                datos.append(self.tabla.item(child)["values"])
-            self.opciones.ips = datos
             pickle.dump(self.opciones,archivo)
     
     def hacer_ping(self):
