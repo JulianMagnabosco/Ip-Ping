@@ -1,17 +1,35 @@
-import sys
-from tkinter import messagebox
-from pythonping import ping
 import pickle
 import threading
+from pythonping import ping
 from tkinter import *
-from  tkinter import ttk
+from tkinter import ttk
+from tkinter import messagebox
 
-class Options():
+class Opciones():
     intervalo=10
     tamanio_p=60
     ping_menor=15
     ping_medio=50
     ips = list()
+
+    def __getitem__(self, item):
+        return getattr(self,item)
+    
+
+    def _get(self):
+        ignorar = ["set","get","ips"]
+        for n in dir(self):
+            if n.find("_",0,1) == 0 or n in ignorar:
+                continue
+            yield n, getattr(self,n)
+        
+    def get(self):
+        return dict(self._get())
+    
+    def set(self, valores):
+        for v in valores:
+            setattr(self,v,valores[v])
+
 
 class RepeatingThread(threading.Timer):
     
@@ -32,8 +50,7 @@ class AppPing(Frame):
         self.ventana_edicion = None
         self.menu_opciones = None
         self.mouse_pos = (0,0)
-        self.opciones = Options()
-
+        self.opciones = Opciones()
         #menu pop up
 
         self.popup_m = Menu(self, tearoff = 0)
@@ -253,21 +270,13 @@ class AppPing(Frame):
         self.enable(False)
         px=15
         py=8
-        self.v_intervalo = StringVar(value=self.opciones.intervalo)
-        Label(self.menu_opciones,text="Intervalo de chequeo:").grid(row=0,padx=px,pady=py,sticky=E)
-        Entry(self.menu_opciones,textvariable=self.v_intervalo).grid(column=1,row=0,padx=px,pady=py)
-        
-        self.v_tamanio_p =StringVar(value=self.opciones.tamanio_p)
-        Label(self.menu_opciones,text="Tamaño de paquetes:").grid(row=1,padx=px,pady=py,sticky=E)
-        Entry(self.menu_opciones,textvariable=self.v_tamanio_p).grid(column=1,row=1,padx=px,pady=py)
 
-        self.v_ping_menor = StringVar(value=self.opciones.ping_menor)
-        Label(self.menu_opciones,text="Ping de chequeo:").grid(row=2,padx=px,pady=py,sticky=E)
-        Entry(self.menu_opciones,textvariable=self.v_ping_menor).grid(column=1,row=2,padx=px,pady=py)
-
-        self.v_ping_medio =StringVar(value=self.opciones.ping_medio)
-        Label(self.menu_opciones,text="Intervalo de chequeo:").grid(row=3,padx=px,pady=py,sticky=E)
-        Entry(self.menu_opciones,textvariable=self.v_ping_medio).grid(column=1,row=3,padx=px,pady=py)
+        datos = self.opciones.get()
+        self.variables = dict()
+        for it, opc in enumerate(datos):
+            self.variables[opc] = StringVar(value=datos[opc])
+            Label(self.menu_opciones,text=opc).grid(row=it,padx=px,pady=py,sticky=E)
+            Entry(self.menu_opciones,textvariable=self.variables[opc]).grid(column=1,row=it,padx=px,pady=py)
 
         Button(self.menu_opciones,text="Aceptar",command=self.guardar_opciones_cerrar).grid(row=4,padx=px,pady=py,column=0)
         Button(self.menu_opciones,text="Guardar",command=self.guardar_opciones).grid(row=4,padx=px,pady=py,column=1)
@@ -280,16 +289,14 @@ class AppPing(Frame):
             self.menu_opciones.destroy()
 
     def guardar_opciones(self):
-        if int(self.v_intervalo.get()) < 10:
+        inter = int(self.variables["intervalo"].get())
+        if inter < 10:
             self.label_error2.configure(text="Error")
             return False
+        self.timer.interval = inter
         self.label_error2.configure(text="")
-        self.opciones.intervalo=int(self.v_intervalo.get())
-        self.opciones.tamanio_p=int(self.v_tamanio_p.get())
-        self.opciones.ping_menor=int(self.v_ping_menor.get())
-        self.opciones.ping_medio=int(self.v_ping_medio.get())
+        self.opciones.set({x: int(self.variables[x].get()) for x in self.variables})
 
-        self.timer.interval = int(self.v_intervalo.get())
         return True
     
     def cerrar_opciones(self):
@@ -323,9 +330,15 @@ class AppPing(Frame):
             except:
                 break
         
+        
         self.pb.stop()
         self.enable(True)
         self.label_actualizado.configure(text="Actualizado!")
+
+        datos = list()
+        for child in self.tabla.get_children():
+            datos.append(self.tabla.item(child)["values"])
+        self.opciones.ips = datos
         self.guardar()
 
 
