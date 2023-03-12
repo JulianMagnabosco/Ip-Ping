@@ -6,6 +6,7 @@ from tkinter import ttk
 from tkinter import messagebox
 
 class Opciones():
+    
     intervalo=10
     tamanio_p=60
     ping_menor=15
@@ -15,16 +16,14 @@ class Opciones():
     def __getitem__(self, item):
         return getattr(self,item)
     
-
-    def _get(self):
+    def get(self):
         ignorar = ["set","get","ips"]
+        valores = dict()
         for n in dir(self):
             if n.find("_",0,1) == 0 or n in ignorar:
                 continue
-            yield n, getattr(self,n)
-        
-    def get(self):
-        return dict(self._get())
+            valores[n] = getattr(self,n)
+        return valores
     
     def set(self, valores):
         for v in valores:
@@ -184,18 +183,18 @@ class AppPing(Frame):
             self.tabla.heading(c,text=str(c).upper(),anchor=W)
     
     
-    def validar_ip(self,nombre,ip):
+    def validar_ip(self, fila ,nombre,ip):
         if len(ip.split(".")) != 4:
             return 1
         for child in self.tabla.get_children():
-            if self.tabla.item(child)["values"][0] == nombre or self.tabla.item(child)["values"][1] == ip:
+            if fila != child and (self.tabla.item(child)["values"][0] == nombre or self.tabla.item(child)["values"][1] == ip):
                 return 2
         return 0
 
     def insertar_fila(self):
         valores = (self.entry_nombre.get(),self.entry_ip.get(),self.Disp_Indefinido)
         texto = ""
-        resultado = self.validar_ip(valores[0],valores[1]) 
+        resultado = self.validar_ip(-1,valores[0],valores[1]) 
 
         if resultado == 0:
             self.tabla.insert(parent='',index='end',text='',values=valores)
@@ -221,22 +220,25 @@ class AppPing(Frame):
         self.ventana_edicion = Toplevel(self.master)
         self.ventana_edicion.resizable(0,0)
         self.ventana_edicion.title("Editar")
-        self.ventana_edicion.geometry(f"+{self.mouse_pos[0]}+{self.mouse_pos[1]}")
         self.ventana_edicion.transient(self)
         self.ventana_edicion.protocol("WM_DELETE_WINDOW", self.cerrar_edicion)
         
+        
+        v_nuevo_nombre = StringVar(valores_item[0])
         Label(self.ventana_edicion, text ="Nombre").pack()
-        nuevo_nombre = Entry(self.ventana_edicion)
-        nuevo_nombre.insert(0,valores_item[0])
-        nuevo_nombre.pack(padx=5,pady=5)
+        Entry(self.ventana_edicion, textvariable=v_nuevo_nombre).pack(padx=5,pady=5)
+
+        v_nuevo_ip = StringVar(valores_item[1])
         Label(self.ventana_edicion, text ="Ip").pack()
-        nuevo_ip = Entry(self.ventana_edicion)
-        nuevo_ip.insert(0,valores_item[1])
-        nuevo_ip.pack(padx=5,pady=5)
-        Button(self.ventana_edicion, text ="Guardar", command=lambda: self.editar(item,(nuevo_nombre.get(),nuevo_ip.get(),valores_item[2]))).pack(padx=5,pady=5)
+        Entry(self.ventana_edicion, textvariable=v_nuevo_ip).pack(padx=5,pady=5)
+
+        Button(self.ventana_edicion, text ="Guardar", 
+               command=lambda: self.editar(item,(v_nuevo_nombre.get(),v_nuevo_ip.get(),valores_item[2]))
+               ).pack(padx=5,pady=5)
         
     def editar(self, fila, datos):
-        if len(datos[1].split(".")) != 4:
+        resultado = self.validar_ip(fila,datos[0],datos[1]) 
+        if resultado > 0:
             messagebox.showerror("Error","Ip incorrecta")
             return
         self.tabla.item(fila,text="",values=datos)
@@ -283,21 +285,14 @@ class AppPing(Frame):
         self.label_error2 = Label(self.menu_opciones,text="",fg="red")
         self.label_error2.grid(row=5,padx=px,pady=py,columnspan=2)
     
+    def guardar_opciones(self):
+        self.opciones.set({x: int(self.variables[x].get()) for x in self.variables})
+        self.timer.interval = self.opciones.intervalo
+        return True
+    
     def guardar_opciones_cerrar(self):
         if self.guardar_opciones():
-            self.enable(True)
-            self.menu_opciones.destroy()
-
-    def guardar_opciones(self):
-        inter = int(self.variables["intervalo"].get())
-        if inter < 10:
-            self.label_error2.configure(text="Error")
-            return False
-        self.timer.interval = inter
-        self.label_error2.configure(text="")
-        self.opciones.set({x: int(self.variables[x].get()) for x in self.variables})
-
-        return True
+            self.cerrar_opciones()
     
     def cerrar_opciones(self):
         self.enable(True)
