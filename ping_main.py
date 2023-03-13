@@ -7,7 +7,7 @@ from tkinter import messagebox
 
 class Opciones():
     
-    intervalo=10
+    intervalo=100
     tamanio_p=60
     ping_menor=15
     ping_medio=50
@@ -130,14 +130,22 @@ class AppPing(Frame):
                 self.opciones = pickle.load(archivo)
 
                 for fila in self.opciones.ips:
-                    self.tabla.insert(parent='',index='end',text='',values=fila,tags=fila[2])
+                    tag = self.Disp_Indefinido
+                    if str(fila[2]).find(self.Disp_Desconectado) == 0:
+                        tag = self.Disp_Desconectado
+                    elif str(fila[2]).find(self.Disp_Conectado) == 0:
+                        tag = self.Disp_Conectado
+                    
+                    self.tabla.insert(parent='',index='end',text='',
+                                      values=fila,
+                                      tags=tag)
             except:
                 pass
 
         #Chequeos
 
         self.timer = RepeatingThread(int(self.opciones.intervalo), self.check)
-        # self.check()
+        self.check()
         self.timer.start()
 
     def quit(self):
@@ -182,12 +190,17 @@ class AppPing(Frame):
             self.tabla.column(c,anchor=W,width=80)
             self.tabla.heading(c,text=str(c).upper(),anchor=W)
     
+    def mostrar_ips(self):
+        datos = dict()
+        for child in self.tabla.get_children():
+            datos[child] = {"nombre":self.tabla.item(child)["values"][0],"ip":self.tabla.item(child)["values"][1]}
+        return datos
     
     def validar_ip(self, fila ,nombre,ip):
         if len(ip.split(".")) != 4:
             return 1
-        for child in self.tabla.get_children():
-            if fila != child and (self.tabla.item(child)["values"][0] == nombre or self.tabla.item(child)["values"][1] == ip):
+        for f, valor in self.mostrar_ips().items():
+            if fila != f and (valor["nombre"] == nombre or valor["ip"]  == ip):
                 return 2
         return 0
 
@@ -223,7 +236,6 @@ class AppPing(Frame):
         self.ventana_edicion.transient(self)
         self.ventana_edicion.protocol("WM_DELETE_WINDOW", self.cerrar_edicion)
         
-        
         v_nuevo_nombre = StringVar(valores_item[0])
         Label(self.ventana_edicion, text ="Nombre").pack()
         Entry(self.ventana_edicion, textvariable=v_nuevo_nombre).pack(padx=5,pady=5)
@@ -244,8 +256,8 @@ class AppPing(Frame):
         self.tabla.item(fila,text="",values=datos)
         self.ventana_edicion.destroy()
         datos = list()
-        for child in self.tabla.get_children():
-            datos.append(self.tabla.item(child)["values"])
+        for valor in self.mostrar_ips().values():
+            datos.append(valor.values())
         self.opciones.ips = datos
         self.enable(True)
 
@@ -253,8 +265,8 @@ class AppPing(Frame):
         item = self.tabla.focus()
         self.tabla.delete(item)
         datos = list()
-        for child in self.tabla.get_children():
-            datos.append(self.tabla.item(child)["values"])
+        for valor in self.mostrar_ips().values():
+            datos.append(valor.values())
         self.opciones.ips = datos
     
     def cerrar_edicion(self):
@@ -315,12 +327,19 @@ class AppPing(Frame):
         for child in self.tabla.get_children():
             host = self.tabla.item(child)["values"][1] #example
             respuesta = ping(str(host), verbose=False, count=4, size=self.opciones.tamanio_p)
-            # respuesta = os.
+            print(respuesta)
             if respuesta == 0: estado=self.Disp_Conectado
             else : estado=self.Disp_Desconectado
+            
+            latencia = "normal"
+            if respuesta.rtt_avg_ms >= self.opciones.ping_menor :
+                latencia = "lento"
+            if respuesta.rtt_avg_ms >= self.opciones.ping_medio :
+                latencia = "muy lento"
+
             try:
                 self.tabla.item(child,text="",
-                                values=(self.tabla.item(child)["values"][0], host, estado),
+                                values=(self.tabla.item(child)["values"][0], host, f"{estado} ({latencia})"),
                                 tags=(estado))
             except:
                 break
