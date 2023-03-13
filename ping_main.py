@@ -13,22 +13,6 @@ class Opciones():
     ping_medio=50
     ips = list()
 
-    def __getitem__(self, item):
-        return getattr(self,item)
-    
-    def get(self):
-        ignorar = ["set","get","ips"]
-        valores = dict()
-        for n in dir(self):
-            if n.find("_",0,1) == 0 or n in ignorar:
-                continue
-            valores[n] = getattr(self,n)
-        return valores
-    
-    def set(self, valores):
-        for v in valores:
-            setattr(self,v,valores[v])
-
 
 class RepeatingThread(threading.Timer):
     
@@ -285,25 +269,44 @@ class AppPing(Frame):
         px=15
         py=8
 
-        datos = self.opciones.get()
-        self.variables = dict()
-        for it, opc in enumerate(datos):
-            self.variables[opc] = StringVar(value=datos[opc])
-            Label(self.menu_opciones,text=opc).grid(row=it,padx=px,pady=py,sticky=E)
-            Entry(self.menu_opciones,textvariable=self.variables[opc]).grid(column=1,row=it,padx=px,pady=py)
+        variables = dict()
+        variables["Intervalo de chequeo"]   = StringVar(value=self.opciones.intervalo)
+        variables["Tamaño de paquete"]      = StringVar(value=self.opciones.tamanio_p)
+        variables["Latencia normal/mala"]   = StringVar(value=self.opciones.ping_menor)
+        variables["Latencia mala/muy mala"] = StringVar(value=self.opciones.ping_medio)
 
-        Button(self.menu_opciones,text="Aceptar",command=self.guardar_opciones_cerrar).grid(row=4,padx=px,pady=py,column=0)
-        Button(self.menu_opciones,text="Guardar",command=self.guardar_opciones).grid(row=4,padx=px,pady=py,column=1)
+        for i, v in enumerate(variables):
+            Label(self.menu_opciones,text=v).grid(row=i,padx=px,pady=py,sticky=E)
+            Entry(self.menu_opciones,textvariable=variables[v]).grid(column=1,row=i,columnspan=2,padx=px,pady=py)
+
+        Button(self.menu_opciones,text="Aceptar",
+               command=lambda: self.guardar_opciones_cerrar(variables)
+               ).grid(row=4,padx=px,pady=py,column=0)
+        
+        Button(self.menu_opciones,text="Guardar",
+               command=lambda: self.guardar_opciones(variables)
+               ).grid(row=4,padx=px,pady=py,column=1)
+        
+        Button(self.menu_opciones,text="Cancelar",
+               command=lambda: self.cerrar_opciones()
+               ).grid(row=4,padx=px,pady=py,column=2)
+
         self.label_error2 = Label(self.menu_opciones,text="",fg="red")
         self.label_error2.grid(row=5,padx=px,pady=py,columnspan=2)
     
-    def guardar_opciones(self):
-        self.opciones.set({x: int(self.variables[x].get()) for x in self.variables})
+    def guardar_opciones(self, variables):
+        valores = list()
+        for v in variables:
+            valores.append(variables[v].get())
+        self.opciones.intervalo  = valores[0]
+        self.opciones.tamanio_p  = valores[1]
+        self.opciones.ping_menor = valores[2]
+        self.opciones.ping_medio = valores[3]
         self.timer.interval = self.opciones.intervalo
         return True
     
-    def guardar_opciones_cerrar(self):
-        if self.guardar_opciones():
+    def guardar_opciones_cerrar(self,variables):
+        if self.guardar_opciones(variables):
             self.cerrar_opciones()
     
     def cerrar_opciones(self):
