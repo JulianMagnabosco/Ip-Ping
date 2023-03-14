@@ -4,16 +4,15 @@ class Opciones():
     
     intervalo=100
     tamanio_p=60
-    ping_menor=15
-    ping_medio=50
+    tiempo_espera=2000
     ips = list()
 
-    def __setattr__(self, __name: str, __value) -> None:
-        if __name != "ips":
-            valor = max(__value,getattr(Opciones(),__name))
-            self.__dict__[__name] =valor
-        else:
-            self.__dict__[__name] =__value
+    # def __setattr__(self, __name: str, __value) -> None:
+    #     if __name != "ips":
+    #         valor = max(__value,getattr(Opciones(),__name))
+    #         self.__dict__[__name] =valor
+    #     else:
+    #         self.__dict__[__name] =__value
 
     def cargar(self):
         with open("data",mode="+ab") as archivo:

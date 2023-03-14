@@ -250,15 +250,16 @@ class AppPing(Frame):
         px=15
         py=8
 
-        variables = dict()
-        variables["Intervalo de chequeo"]   = StringVar(value=self.opciones.intervalo)
-        variables["Tamaño de paquete"]      = StringVar(value=self.opciones.tamanio_p)
-        variables["Latencia normal/mala"]   = StringVar(value=self.opciones.ping_menor)
-        variables["Latencia mala/muy mala"] = StringVar(value=self.opciones.ping_medio)
-
+        variables =(
+            ("Intervalo de chequeo (s)",   StringVar(value=self.opciones.intervalo),       10),
+            ("Tamaño de paquete (bytes)",  StringVar(value=self.opciones.tamanio_p),       10),
+            ("Tiempo de espera (ms)",      StringVar(value=self.opciones.tiempo_espera),   10)
+        )
+     
         for i, v in enumerate(variables):
-            Label(self.menu_opciones,text=v).grid(row=i,padx=px,pady=py,sticky=E)
-            Entry(self.menu_opciones,textvariable=variables[v]).grid(column=1,row=i,columnspan=2,padx=px,pady=py)
+            Label(self.menu_opciones,text=v[0]).grid(row=i,padx=px,pady=py,sticky=E)
+            Entry(self.menu_opciones,textvariable=v[1]).grid(column=1,row=i,columnspan=2,padx=px,pady=py)
+            
 
         Button(self.menu_opciones,text="Aceptar",
                command=lambda: self.guardar_opciones_cerrar(variables)
@@ -276,11 +277,11 @@ class AppPing(Frame):
     def guardar_opciones(self, variables):
         valores = list()
         for v in variables:
-            valores.append(int(variables[v].get()))
-        self.opciones.intervalo  = valores[0]
-        self.opciones.tamanio_p  = valores[1]
-        self.opciones.ping_menor = valores[2]
-        self.opciones.ping_medio = valores[3]
+            valores.append( max(v[2], int(v[1].get())) )
+        self.opciones.intervalo = valores[0]
+        self.opciones.tamanio_p = valores[1]
+        self.opciones.tiempo_espera = valores[2]
+
         self.timer.interval = self.opciones.intervalo
     
     def guardar_opciones_cerrar(self,variables):
@@ -309,9 +310,9 @@ class AppPing(Frame):
             if respuesta == 0: 
                 estado=self.Disp_Conectado
                 latencia = "normal"
-                if respuesta.rtt_avg_ms >= self.opciones.ping_menor :
+                if respuesta.rtt_avg_ms >= self.opciones.tiempo_espera*1/3 :
                     latencia = "lento"
-                if respuesta.rtt_avg_ms >= self.opciones.ping_medio :
+                if respuesta.rtt_avg_ms >= self.opciones.tiempo_espera*2/3 :
                     latencia = "muy lento"
                 latencia = f"{latencia} ({respuesta.rtt_avg_ms} ms)"
             else : 
