@@ -1,18 +1,10 @@
-import pickle
 import threading
 from pythonping import ping
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
 
-class Opciones():
-    
-    intervalo=100
-    tamanio_p=60
-    ping_menor=15
-    ping_medio=50
-    ips = list()
-
+from opciones import Opciones
 
 class RepeatingThread(threading.Timer):
     
@@ -33,7 +25,7 @@ class AppPing(Frame):
         self.ventana_edicion = None
         self.menu_opciones = None
         self.mouse_pos = (0,0)
-        self.opciones = Opciones()
+
         #menu pop up
 
         self.popup_m = Menu(self, tearoff = 0)
@@ -106,25 +98,14 @@ class AppPing(Frame):
 
         #crear columnas
 
-        self.crear_columnas(["nombre","ip","estado"])
+        self.crear_columnas(["nombre","ip","estado","ping/latencia"])
 
-        with open("data",mode="+ab") as archivo:
-            try:
-                archivo.seek(0)
-                self.opciones = pickle.load(archivo)
-
-                for fila in self.opciones.ips:
-                    tag = self.Disp_Indefinido
-                    if str(fila[2]).find(self.Disp_Desconectado) == 0:
-                        tag = self.Disp_Desconectado
-                    elif str(fila[2]).find(self.Disp_Conectado) == 0:
-                        tag = self.Disp_Conectado
-                    
-                    self.tabla.insert(parent='',index='end',text='',
-                                      values=fila,
-                                      tags=tag)
-            except:
-                pass
+        #Carga de opciones
+        
+        self.opciones = Opciones()
+        self.opciones.cargar()
+        for ip in self.opciones.ips:
+            self.tabla.insert(parent='',index='end',text='',values=ip, tags=ip[2])
 
         #Chequeos
 
@@ -134,7 +115,7 @@ class AppPing(Frame):
 
     def quit(self):
         self.timer.cancel()
-        self.guardar()
+        self.opciones.guardar()
         Frame.quit(self)
 
     def mouse(self,event):
@@ -189,12 +170,12 @@ class AppPing(Frame):
         return 0
 
     def insertar_fila(self):
-        valores = (self.entry_nombre.get(),self.entry_ip.get(),self.Disp_Indefinido)
+        valores = (self.entry_nombre.get(),self.entry_ip.get(),self.Disp_Indefinido,"-")
         texto = ""
         resultado = self.validar_ip(-1,valores[0],valores[1]) 
 
         if resultado == 0:
-            self.tabla.insert(parent='',index='end',text='',values=valores)
+            self.tabla.insert(parent='',index='end',text='',values=valores,tags=self.Disp_Indefinido)
             self.entry_nombre.delete(first=0,last=END)
             self.entry_ip.delete(first=0,last=END)
             self.check()
@@ -291,32 +272,25 @@ class AppPing(Frame):
                command=lambda: self.cerrar_opciones()
                ).grid(row=4,padx=px,pady=py,column=2)
 
-        self.label_error2 = Label(self.menu_opciones,text="",fg="red")
-        self.label_error2.grid(row=5,padx=px,pady=py,columnspan=2)
     
     def guardar_opciones(self, variables):
         valores = list()
         for v in variables:
-            valores.append(variables[v].get())
+            valores.append(int(variables[v].get()))
         self.opciones.intervalo  = valores[0]
         self.opciones.tamanio_p  = valores[1]
         self.opciones.ping_menor = valores[2]
         self.opciones.ping_medio = valores[3]
         self.timer.interval = self.opciones.intervalo
-        return True
     
     def guardar_opciones_cerrar(self,variables):
-        if self.guardar_opciones(variables):
-            self.cerrar_opciones()
+        self.guardar_opciones(variables)
+        self.cerrar_opciones()
     
     def cerrar_opciones(self):
         self.enable(True)
         self.menu_opciones.destroy()
 
-
-    def guardar(self):
-        with open("data",mode="wb") as archivo:
-            pickle.dump(self.opciones,archivo)
 
     def check(self):
         self.pb.start(5)
@@ -328,21 +302,25 @@ class AppPing(Frame):
 
     def hacer_ping(self):
         for child in self.tabla.get_children():
-            host = self.tabla.item(child)["values"][1] #example
-            respuesta = ping(str(host), verbose=False, count=4, size=self.opciones.tamanio_p)
+            nombre = self.tabla.item(child)["values"][0] 
+            direccion = self.tabla.item(child)["values"][1] 
+            respuesta = ping(str(direccion), verbose=False, count=4, size=self.opciones.tamanio_p)
             print(respuesta)
-            if respuesta == 0: estado=self.Disp_Conectado
-            else : estado=self.Disp_Desconectado
+            if respuesta == 0: 
+                estado=self.Disp_Conectado
+                latencia = "normal"
+                if respuesta.rtt_avg_ms >= self.opciones.ping_menor :
+                    latencia = "lento"
+                if respuesta.rtt_avg_ms >= self.opciones.ping_medio :
+                    latencia = "muy lento"
+                latencia = f"{latencia} ({respuesta.rtt_avg_ms} ms)"
+            else : 
+                estado=self.Disp_Desconectado
+                latencia = "-"
             
-            latencia = "normal"
-            if respuesta.rtt_avg_ms >= self.opciones.ping_menor :
-                latencia = "lento"
-            if respuesta.rtt_avg_ms >= self.opciones.ping_medio :
-                latencia = "muy lento"
-
             try:
                 self.tabla.item(child,text="",
-                                values=(self.tabla.item(child)["values"][0], host, f"{estado} ({latencia})"),
+                                values=(nombre, direccion, estado, latencia),
                                 tags=(estado))
             except:
                 break
@@ -356,7 +334,7 @@ class AppPing(Frame):
         for child in self.tabla.get_children():
             datos.append(self.tabla.item(child)["values"])
         self.opciones.ips = datos
-        self.guardar()
+        self.opciones.guardar()
 
 
 if __name__ == "__main__":
