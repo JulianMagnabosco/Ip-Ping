@@ -2,26 +2,26 @@ import pickle
 
 class Opciones():
     
-    intervalo=100
-    tamanio_p=60
-    tiempo_espera=2000
-    ips = list()
 
-    # def __setattr__(self, __name: str, __value) -> None:
-    #     if __name != "ips":
-    #         valor = max(__value,getattr(Opciones(),__name))
-    #         self.__dict__[__name] =valor
-    #     else:
-    #         self.__dict__[__name] =__value
+    def __init__(self):
+        self.intervalo=100
+        self.tamanio_p=60
+        self.tiempo_espera=2000
+        self.metodo_chequeo=0
+        self.ips = list()
 
     def cargar(self):
+        data = Opciones()
         with open("data",mode="+ab") as archivo:
             try:
                 archivo.seek(0)
-                self = pickle.load(archivo)
+                data = pickle.load(archivo)
             except:
                 print("sin datos")
+        return data
     
     def guardar(self):
         with open("data",mode="wb") as archivo:
             pickle.dump(self,archivo)
+            print("guardado")
+            print(self.intervalo)

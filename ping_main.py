@@ -1,3 +1,4 @@
+import os
 import threading
 from pythonping import ping
 from tkinter import *
@@ -17,6 +18,7 @@ class AppPing(Frame):
     Disp_Conectado = "Conectado"
     Disp_Desconectado = "Desconectado"
     Disp_Indefinido = "Indefinido"
+    Metodos_chequeo=["Ping(sistema)","Ping(python)"]
 
     def __init__(self,master=None) -> None:
 
@@ -102,8 +104,7 @@ class AppPing(Frame):
 
         #Carga de opciones
         
-        self.opciones = Opciones()
-        self.opciones.cargar()
+        self.opciones = Opciones().cargar()
         for ip in self.opciones.ips:
             self.tabla.insert(parent='',index='end',text='',values=ip, tags=ip[2])
 
@@ -250,15 +251,21 @@ class AppPing(Frame):
         px=15
         py=8
 
-        variables =(
-            ("Intervalo de chequeo (s)",   StringVar(value=self.opciones.intervalo),       10),
-            ("Tamaño de paquete (bytes)",  StringVar(value=self.opciones.tamanio_p),       10),
-            ("Tiempo de espera (ms)",      StringVar(value=self.opciones.tiempo_espera),   10)
-        )
+        variables ={
+            "intervalo":("Intervalo de chequeo (s)",    StringVar(value=self.opciones.intervalo),       10),
+            "tamanio_p":("Tamaño de paquete (bytes)",   StringVar(value=self.opciones.tamanio_p),       10),
+            "tiempo_espera":("Tiempo de espera (ms)",   StringVar(value=self.opciones.tiempo_espera),   10),
+            "metodo_chequeo":("Metodo de chequeo",      StringVar(value=self.Metodos_chequeo[self.opciones.metodo_chequeo]),  "c")
+        }
      
-        for i, v in enumerate(variables):
+        for i, v in enumerate(variables.values()):
             Label(self.menu_opciones,text=v[0]).grid(row=i,padx=px,pady=py,sticky=E)
-            Entry(self.menu_opciones,textvariable=v[1]).grid(column=1,row=i,columnspan=2,padx=px,pady=py)
+            if v[2] == "c":
+                ttk.Combobox(self.menu_opciones,values=self.Metodos_chequeo,
+                             state = 'readonly',textvariable=v[1]
+                             ).grid(column=1,row=i,columnspan=2,padx=px,pady=py)
+            else:
+                Entry(self.menu_opciones,textvariable=v[1]).grid(column=1,row=i,columnspan=2,padx=px,pady=py)
             
 
         Button(self.menu_opciones,text="Aceptar",
@@ -274,13 +281,14 @@ class AppPing(Frame):
                ).grid(row=4,padx=px,pady=py,column=2)
 
     
-    def guardar_opciones(self, variables):
-        valores = list()
-        for v in variables:
-            valores.append( max(v[2], int(v[1].get())) )
-        self.opciones.intervalo = valores[0]
-        self.opciones.tamanio_p = valores[1]
-        self.opciones.tiempo_espera = valores[2]
+    def guardar_opciones(self, variables:dict):
+        for n,v in variables.items():
+            valor = 0
+            if v[2] == "c":
+                valor = self.Metodos_chequeo.index(v[1].get())
+            else:
+                valor = v[1].get()
+            self.opciones.__setattr__(n,int(valor))
 
         self.timer.interval = self.opciones.intervalo
     
@@ -289,6 +297,7 @@ class AppPing(Frame):
         self.cerrar_opciones()
     
     def cerrar_opciones(self):
+        self.opciones.guardar()
         self.enable(True)
         self.menu_opciones.destroy()
 
@@ -305,19 +314,25 @@ class AppPing(Frame):
         for child in self.tabla.get_children():
             nombre = self.tabla.item(child)["values"][0] 
             direccion = self.tabla.item(child)["values"][1] 
-            respuesta = ping(str(direccion), verbose=False, count=4, size=self.opciones.tamanio_p)
-            print(respuesta)
-            if respuesta == 0: 
-                estado=self.Disp_Conectado
-                latencia = "normal"
+
+            respuesta=-1
+            latencia = "normal"
+
+            if self.opciones.metodo_chequeo == 0:
+                respuesta = os.system(f"ping {direccion} -w {self.opciones.tamanio_p} -l {self.opciones.tamanio_p}")
+                
+            if self.opciones.metodo_chequeo == 1:
+                respuesta = ping(str(direccion), verbose=False, count=4, size=self.opciones.tamanio_p, timeout=self.opciones.tiempo_espera/1000)
                 if respuesta.rtt_avg_ms >= self.opciones.tiempo_espera*1/3 :
                     latencia = "lento"
                 if respuesta.rtt_avg_ms >= self.opciones.tiempo_espera*2/3 :
                     latencia = "muy lento"
                 latencia = f"{latencia} ({respuesta.rtt_avg_ms} ms)"
+
+            if respuesta == 0: 
+                estado=self.Disp_Conectado
             else : 
                 estado=self.Disp_Desconectado
-                latencia = "-"
             
             try:
                 self.tabla.item(child,text="",
