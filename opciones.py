@@ -23,5 +23,3 @@ class Opciones():
     def guardar(self):
         with open("data",mode="wb") as archivo:
             pickle.dump(self,archivo)
-            print("guardado")
-            print(self.intervalo)

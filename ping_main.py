@@ -1,4 +1,4 @@
-import os
+import subprocess
 import threading
 from pythonping import ping
 from tkinter import *
@@ -110,12 +110,13 @@ class AppPing(Frame):
 
         #Chequeos
 
-        self.timer = RepeatingThread(int(self.opciones.intervalo), self.check)
+        self.timer = None
+        self.activo = True
         self.check()
-        self.timer.start()
 
     def quit(self):
-        self.timer.cancel()
+        self.activar_timer(False)
+        self.activo = False
         self.opciones.guardar()
         Frame.quit(self)
 
@@ -137,6 +138,18 @@ class AppPing(Frame):
             self.tabla.unbind_all('<Double-Button-1>')
             self.tabla.unbind_all('<Button-3>')
             self.tabla.unbind_all("<Motion>")
+    
+    def activar_timer(self,bool):
+        if  bool :
+            # self.timer = RepeatingThread(int(self.opciones.intervalo), self.check)
+            # self.timer.start()
+            self.timer = self.after(self.opciones.intervalo*1000, self.check)
+            
+        else:
+            # self.timer.cancel()
+            if self.timer:
+                self.after_cancel(self.timer)
+        
 
     def popup_menu(self,event):
         try:
@@ -193,6 +206,7 @@ class AppPing(Frame):
             return
         valores_item = self.tabla.item(item)["values"]
         self.enable(False)
+        self.activar_timer(False)
 
         if self.ventana_edicion:
             self.ventana_edicion.destroy()
@@ -226,6 +240,7 @@ class AppPing(Frame):
             datos.append(valor.values())
         self.opciones.ips = datos
         self.enable(True)
+        self.activar_timer(True)
 
     def eliminar(self):
         item = self.tabla.focus()
@@ -237,6 +252,7 @@ class AppPing(Frame):
     
     def cerrar_edicion(self):
         self.enable(True)
+        self.activar_timer(True)
         self.ventana_edicion.destroy()
 
     def abrir_opciones(self):
@@ -248,6 +264,7 @@ class AppPing(Frame):
         
         self.menu_opciones.protocol("WM_DELETE_WINDOW", self.cerrar_opciones)
         self.enable(False)
+        self.activar_timer(False)
         px=15
         py=8
 
@@ -285,20 +302,25 @@ class AppPing(Frame):
         for n,v in variables.items():
             valor = 0
             if v[2] == "c":
-                valor = self.Metodos_chequeo.index(v[1].get())
+                if v[1].get() in self.Metodos_chequeo:
+                    valor = int(self.Metodos_chequeo.index(v[1].get()))
             else:
-                valor = v[1].get()
-            self.opciones.__setattr__(n,int(valor))
+                valor = int(v[1].get())
+                if valor < int(v[2]):
+                    messagebox.showerror("Error", f"El valor de {v[0]} no puede ser menor a {v[2]}", parent=self.menu_opciones)
+                    return False
+            self.opciones.__setattr__(n,valor)
 
-        self.timer.interval = self.opciones.intervalo
+        return True
     
     def guardar_opciones_cerrar(self,variables):
-        self.guardar_opciones(variables)
-        self.cerrar_opciones()
+        if self.guardar_opciones(variables):
+            self.cerrar_opciones()
     
     def cerrar_opciones(self):
         self.opciones.guardar()
         self.enable(True)
+        self.activar_timer(True)
         self.menu_opciones.destroy()
 
 
@@ -306,8 +328,9 @@ class AppPing(Frame):
         self.pb.start(5)
         self.enable(False)
         self.label_actualizado.configure(text="")
+        self.activar_timer(False)
 
-        t = threading.Thread(target=self.hacer_ping)
+        t = threading.Thread(target=self.hacer_ping,daemon=True)
         t.start()    
 
     def hacer_ping(self):
@@ -316,13 +339,17 @@ class AppPing(Frame):
             direccion = self.tabla.item(child)["values"][1] 
 
             respuesta=-1
-            latencia = "normal"
+            latencia = "-"
 
             if self.opciones.metodo_chequeo == 0:
-                respuesta = os.system(f"ping {direccion} -w {self.opciones.tamanio_p} -l {self.opciones.tamanio_p}")
+                # respuesta = os.system(f"ping {direccion} -w {self.opciones.tamanio_p} -l {self.opciones.tamanio_p}")
+                r = subprocess.run(["ping", direccion,"-w", str(self.opciones.tamanio_p), "-l", str(self.opciones.tamanio_p)], stdout=subprocess.PIPE)
+                respuesta = r.returncode
                 
             if self.opciones.metodo_chequeo == 1:
-                respuesta = ping(str(direccion), verbose=False, count=4, size=self.opciones.tamanio_p, timeout=self.opciones.tiempo_espera/1000)
+                respuesta = ping(str(direccion), count=4, size=self.opciones.tamanio_p, timeout=self.opciones.tiempo_espera/1000)
+
+                latencia = "normal"
                 if respuesta.rtt_avg_ms >= self.opciones.tiempo_espera*1/3 :
                     latencia = "lento"
                 if respuesta.rtt_avg_ms >= self.opciones.tiempo_espera*2/3 :
@@ -334,13 +361,14 @@ class AppPing(Frame):
             else : 
                 estado=self.Disp_Desconectado
             
+            if not self.activo:
+                return
             try:
                 self.tabla.item(child,text="",
                                 values=(nombre, direccion, estado, latencia),
                                 tags=(estado))
             except:
                 break
-        
         
         self.pb.stop()
         self.enable(True)
@@ -351,6 +379,8 @@ class AppPing(Frame):
             datos.append(self.tabla.item(child)["values"])
         self.opciones.ips = datos
         self.opciones.guardar()
+
+        self.activar_timer(True)
 
 
 if __name__ == "__main__":
