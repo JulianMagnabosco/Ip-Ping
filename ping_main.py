@@ -4,7 +4,6 @@ from pythonping import ping
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
-
 from opciones import Opciones
 
 class RepeatingThread(threading.Timer):
@@ -12,7 +11,6 @@ class RepeatingThread(threading.Timer):
     def run(self):
         while not self.finished.wait(self.interval):
             self.function( *self.args,**self.kwargs)
-
 
 class AppPing(Frame):
     Disp_Conectado = "Conectado"
@@ -150,14 +148,12 @@ class AppPing(Frame):
             if self.timer:
                 self.after_cancel(self.timer)
         
-
     def popup_menu(self,event):
         try:
             if self.tabla.focus():
                 self.popup_m.tk_popup(event.x_root, event.y_root)
         finally:
             self.popup_m.grab_release()
-
 
     def crear_columnas(self, columnas):
         self.tabla['columns'] = tuple(columnas)
@@ -198,8 +194,7 @@ class AppPing(Frame):
         elif resultado == 2:
             texto = "Error: no repetir nombres/ips"
         self.label_error.config(text=texto)
-
-        
+  
     def abrir_edicion(self,*args):
         item = self.tabla.focus()
         if not item:
@@ -269,10 +264,11 @@ class AppPing(Frame):
         py=8
 
         variables ={
-            "intervalo":("Intervalo de chequeo (s)",    StringVar(value=self.opciones.intervalo),       10),
-            "tamanio_p":("Tamaño de paquete (bytes)",   StringVar(value=self.opciones.tamanio_p),       10),
-            "tiempo_espera":("Tiempo de espera (ms)",   StringVar(value=self.opciones.tiempo_espera),   10),
-            "metodo_chequeo":("Metodo de chequeo",      StringVar(value=self.Metodos_chequeo[self.opciones.metodo_chequeo]),  "c")
+            "intervalo":        ("Intervalo de chequeo (s)",    StringVar(value=self.opciones.intervalo),                               10),
+            "tamanio_p":        ("Tamaño de paquete (bytes)",   StringVar(value=self.opciones.tamanio_p),                               1),
+            "cantidad_p":       ("Cantidad de paquetes",        StringVar(value=self.opciones.cantidad_p),                              1),
+            "tiempo_espera":    ("Tiempo de espera (ms)",       StringVar(value=self.opciones.tiempo_espera),                           10),
+            "metodo_chequeo":   ("Metodo de chequeo",           StringVar(value=self.Metodos_chequeo[self.opciones.metodo_chequeo]),    "c")
         }
      
         for i, v in enumerate(variables.values()):
@@ -283,21 +279,19 @@ class AppPing(Frame):
                              ).grid(column=1,row=i,columnspan=2,padx=px,pady=py)
             else:
                 Entry(self.menu_opciones,textvariable=v[1]).grid(column=1,row=i,columnspan=2,padx=px,pady=py)
-            
-
+       
         Button(self.menu_opciones,text="Aceptar",
                command=lambda: self.guardar_opciones_cerrar(variables)
-               ).grid(row=4,padx=px,pady=py,column=0)
+               ).grid(row=i+1,padx=px,pady=py,column=0)
         
         Button(self.menu_opciones,text="Guardar",
                command=lambda: self.guardar_opciones(variables)
-               ).grid(row=4,padx=px,pady=py,column=1)
+               ).grid(row=i+1,padx=px,pady=py,column=1)
         
         Button(self.menu_opciones,text="Cancelar",
                command=lambda: self.cerrar_opciones()
-               ).grid(row=4,padx=px,pady=py,column=2)
+               ).grid(row=i+1,padx=px,pady=py,column=2)
 
-    
     def guardar_opciones(self, variables:dict):
         for n,v in variables.items():
             valor = 0
@@ -323,7 +317,6 @@ class AppPing(Frame):
         self.activar_timer(True)
         self.menu_opciones.destroy()
 
-
     def check(self):
         self.pb.start(5)
         self.enable(False)
@@ -343,11 +336,13 @@ class AppPing(Frame):
 
             if self.opciones.metodo_chequeo == 0:
                 # respuesta = os.system(f"ping {direccion} -w {self.opciones.tamanio_p} -l {self.opciones.tamanio_p}")
-                r = subprocess.run(["ping", direccion,"-w", str(self.opciones.tamanio_p), "-l", str(self.opciones.tamanio_p)], stdout=subprocess.PIPE)
+                r = subprocess.run(["ping", direccion,"-w", str(self.opciones.tiempo_espera), 
+                                    "-l", str(self.opciones.tamanio_p), 
+                                    "-n", str(self.opciones.cantidad_p)])
                 respuesta = r.returncode
                 
             if self.opciones.metodo_chequeo == 1:
-                respuesta = ping(str(direccion), count=4, size=self.opciones.tamanio_p, timeout=self.opciones.tiempo_espera/1000)
+                respuesta = ping(str(direccion), count=self.opciones.cantidad_p, size=self.opciones.tamanio_p, timeout=self.opciones.tiempo_espera/1000)
 
                 latencia = "normal"
                 if respuesta.rtt_avg_ms >= self.opciones.tiempo_espera*1/3 :
@@ -381,7 +376,6 @@ class AppPing(Frame):
         self.opciones.guardar()
 
         self.activar_timer(True)
-
 
 if __name__ == "__main__":
     app = AppPing()

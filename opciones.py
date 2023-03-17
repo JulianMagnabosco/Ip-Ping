@@ -6,6 +6,7 @@ class Opciones():
     def __init__(self):
         self.intervalo=100
         self.tamanio_p=60
+        self.cantidad_p=4
         self.tiempo_espera=2000
         self.metodo_chequeo=0
         self.ips = list()
