@@ -338,7 +338,8 @@ class AppPing(Frame):
                 # respuesta = os.system(f"ping {direccion} -w {self.opciones.tamanio_p} -l {self.opciones.tamanio_p}")
                 r = subprocess.run(["ping", direccion,"-w", str(self.opciones.tiempo_espera), 
                                     "-l", str(self.opciones.tamanio_p), 
-                                    "-n", str(self.opciones.cantidad_p)])
+                                    "-n", str(self.opciones.cantidad_p)],
+                                    stdout=subprocess.PIPE)
                 respuesta = r.returncode
                 
             if self.opciones.metodo_chequeo == 1:
