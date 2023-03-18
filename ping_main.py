@@ -6,11 +6,6 @@ from tkinter import ttk
 from tkinter import messagebox
 from opciones import Opciones
 
-class RepeatingThread(threading.Timer):
-    
-    def run(self):
-        while not self.finished.wait(self.interval):
-            self.function( *self.args,**self.kwargs)
 
 class AppPing(Frame):
     Disp_Conectado = "Conectado"
