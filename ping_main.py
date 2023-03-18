@@ -110,7 +110,7 @@ class AppPing(Frame):
 
         self.timer = None
         self.activo = True
-        self.check()
+        self.activar_timer(True)
 
     def quit(self):
         self.activar_timer(False)
@@ -133,9 +133,9 @@ class AppPing(Frame):
             self.button_agregar.configure(state="disabled")
             self.button_chequear.configure(state="disabled")
             self.button_opciones.configure(state="disabled")
-            self.tabla.unbind_all('<Double-Button-1>')
-            self.tabla.unbind_all('<Button-3>')
-            self.tabla.unbind_all("<Motion>")
+            self.tabla.unbind('<Double-Button-1>')
+            self.tabla.unbind('<Button-3>')
+            self.tabla.unbind("<Motion>")
     
     def activar_timer(self,bool):
         if  bool :
@@ -172,8 +172,18 @@ class AppPing(Frame):
         return datos
     
     def validar_ip(self, fila ,nombre,ip):
-        if len(ip.split(".")) != 4:
-            return 1
+        digitos = str(ip).split(".")
+
+        if len(digitos) == 4 :
+            for d in digitos:
+                if not d.isnumeric():
+                    return 1
+            # if len(str(digitos[-1]).split(":")) == 2:
+            #     for d in str(digitos[-1]).split(":"):
+            #         if not d.isalnum():
+            #             return 1
+        else: return 1
+        
         for f, valor in self.mostrar_ips().items():
             if fila != f and (valor["nombre"] == nombre or valor["ip"]  == ip):
                 return 2
@@ -211,16 +221,16 @@ class AppPing(Frame):
         self.ventana_edicion.transient(self)
         self.ventana_edicion.protocol("WM_DELETE_WINDOW", self.cerrar_edicion)
         
-        v_nuevo_nombre = StringVar(valores_item[0])
+        v_nuevo_nombre = StringVar(value=valores_item[0])
         Label(self.ventana_edicion, text ="Nombre").pack()
         Entry(self.ventana_edicion, textvariable=v_nuevo_nombre).pack(padx=5,pady=5)
 
-        v_nuevo_ip = StringVar(valores_item[1])
+        v_nuevo_ip = StringVar(value=valores_item[1])
         Label(self.ventana_edicion, text ="Ip").pack()
         Entry(self.ventana_edicion, textvariable=v_nuevo_ip).pack(padx=5,pady=5)
 
         Button(self.ventana_edicion, text ="Guardar", 
-               command=lambda: self.editar(item,(v_nuevo_nombre.get(),v_nuevo_ip.get(),valores_item[2]))
+               command=lambda: self.editar(item,(v_nuevo_nombre.get(),v_nuevo_ip.get()))
                ).pack(padx=5,pady=5)
         
     def editar(self, fila, datos):
@@ -232,7 +242,8 @@ class AppPing(Frame):
         self.ventana_edicion.destroy()
         datos = list()
         for valor in self.mostrar_ips().values():
-            datos.append(valor.values())
+            datos_fila = tuple(valor.values())
+            datos.append(datos_fila)
         self.opciones.ips = datos
         self.enable(True)
         self.activar_timer(True)
@@ -329,7 +340,7 @@ class AppPing(Frame):
     def hacer_ping(self):
         for child in self.tabla.get_children():
             nombre = self.tabla.item(child)["values"][0] 
-            direccion = self.tabla.item(child)["values"][1] 
+            direccion = str(self.tabla.item(child)["values"][1]).split(":")[0]
 
             respuesta=-1
             latencia = "-"
@@ -339,11 +350,12 @@ class AppPing(Frame):
                 r = subprocess.run(["ping", direccion,"-w", str(self.opciones.tiempo_espera), 
                                     "-l", str(self.opciones.tamanio_p), 
                                     "-n", str(self.opciones.cantidad_p)],
-                                    stdout=subprocess.PIPE)
+                                    stdout=subprocess.PIPE
+                                    )
                 respuesta = r.returncode
                 
             if self.opciones.metodo_chequeo == 1:
-                respuesta = ping(str(direccion), count=self.opciones.cantidad_p, size=self.opciones.tamanio_p, timeout=self.opciones.tiempo_espera/1000)
+                respuesta = ping(direccion, count=self.opciones.cantidad_p, size=self.opciones.tamanio_p, timeout=self.opciones.tiempo_espera/1000)
 
                 latencia = "normal"
                 if respuesta.rtt_avg_ms >= self.opciones.tiempo_espera*1/3 :

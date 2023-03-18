@@ -23,4 +23,7 @@ class Opciones():
     
     def guardar(self):
         with open("data",mode="wb") as archivo:
-            pickle.dump(self,archivo)
+            try:
+                pickle.dump(self,archivo)
+            except:
+                print("error datos")
