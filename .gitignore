@@ -1,3 +1,4 @@
-build
-ping_main.spec
-icon.ico
+/build
+/ping_main.spec
+/icon.ico
+*.pyc
