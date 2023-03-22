@@ -350,14 +350,20 @@ class AppPing(Frame):
                 respuesta = r.returncode
                 
             if self.opciones.metodo_chequeo == 1:
-                respuesta = ping(direccion, count=self.opciones.cantidad_p, size=self.opciones.tamanio_p, timeout=self.opciones.tiempo_espera/1000)
-
+                r = ping(direccion, count=self.opciones.cantidad_p, size=self.opciones.tamanio_p, timeout=self.opciones.tiempo_espera/1000)
+                
                 latencia = "normal"
-                if respuesta.rtt_avg_ms >= self.opciones.tiempo_espera*1/3 :
+                if r.rtt_avg_ms >= self.opciones.tiempo_espera*1/3 :
                     latencia = "lento"
-                if respuesta.rtt_avg_ms >= self.opciones.tiempo_espera*2/3 :
+                if r.rtt_avg_ms >= self.opciones.tiempo_espera*2/3 :
                     latencia = "muy lento"
-                latencia = f"{latencia} ({respuesta.rtt_avg_ms} ms)"
+                latencia = f"{latencia} ({r.rtt_avg_ms} ms)"
+
+                if r.success(option=3):
+                    respuesta = 0
+                else:
+                    respuesta = -1
+                
 
             if respuesta == 0: 
                 estado=self.Disp_Conectado
