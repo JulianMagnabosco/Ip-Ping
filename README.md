@@ -6,4 +6,4 @@ Hecho con Python 3.12.6 y la libreria Tkinter.
 
 ## Uso
 
-Agregue foto
+Agregue IPs y presione el botón CHECKEAR para comprobar su estado y ping.
