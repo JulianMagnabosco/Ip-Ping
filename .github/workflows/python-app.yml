@@ -26,13 +26,12 @@ jobs:
           name: Windows_app
           path: dist/ip-ping.exe
 
-      - name: create release
+      - name: Create release Asset
         id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
           tag_name: ${{ github.event.head_commit.message }}
           release_name: ${{ github.event.head_commit.message }}
           body: |
