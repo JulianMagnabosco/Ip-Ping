@@ -1,4 +1,7 @@
 /build
+/dist
+/.venv
 /ping_main.spec
 /icon.ico
 *.pyc
+data

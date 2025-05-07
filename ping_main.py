@@ -393,8 +393,10 @@ class AppPing(Frame):
 
 if __name__ == "__main__":
     app = AppPing()
-    app.master.title('PythonGuides')
+    app.master.title('IP-Ping')
     app.master.geometry("800x500")
+    icono = PhotoImage(file="icon.png")
+    app.master.iconphoto(True, icono)
     app.mainloop()
     app.quit()
 
