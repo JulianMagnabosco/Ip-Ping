@@ -27,9 +27,21 @@ jobs:
           name: Windows_app
           path: dist/ip-ping.exe
 
-      - name: Get current date
-        id: date
-        run: echo "{date}={$(date +'%Y-%m-%dT%H:%M:%S')}" >> $GITHUB_OUTPUT
+      - name: Get next tag version
+        id: tag
+        run: |
+          latest_tag=$(git tag --sort=-v:refname | head -n 1)
+          echo "Latest tag: $latest_tag"
+          if [[ "$latest_tag" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            major=${BASH_REMATCH[1]}
+            minor=${BASH_REMATCH[2]}
+            patch=${BASH_REMATCH[3]}
+            new_tag="v$major.$minor.$((patch + 1))"
+          else
+            new_tag="v1.0.0"
+          fi
+          echo "New tag: $new_tag"
+          echo "tag=$new_tag" >> $GITHUB_OUTPUT
         
       - name: Create release Asset
         id: create_release
@@ -37,8 +49,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ steps.date.outputs.date }}
-          release_name: ${{ steps.date.outputs.date }}
+          tag_name: ${{ steps.tag.outputs.tag }}
+          release_name: ${{ steps.tag.outputs.tag }}
           body: |
             Test Release v1.0.0
           draft: false
