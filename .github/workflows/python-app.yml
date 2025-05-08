@@ -30,16 +30,7 @@ jobs:
       - name: Get next tag version
         id: tag
         run: |
-          latest_tag=$(git tag --sort=-v:refname | head -n 1)
-          echo "Latest tag: $latest_tag"
-          if [[ "$latest_tag" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
-            major=${BASH_REMATCH[1]}
-            minor=${BASH_REMATCH[2]}
-            patch=${BASH_REMATCH[3]}
-            new_tag="v$major.$minor.$((patch + 1))"
-          else
-            new_tag="v1.0.0"
-          fi
+          new_tag=$(date -u +"release-%Y-%m-%d-%H%M%S")
           echo "New tag: $new_tag"
           echo "tag=$new_tag" >> $GITHUB_OUTPUT
         
