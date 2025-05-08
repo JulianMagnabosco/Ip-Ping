@@ -29,6 +29,7 @@ jobs:
 
       - name: Get next tag version
         id: tag
+        shell: bash
         run: |
           new_tag=$(date -u +"release-%Y-%m-%d-%H%M%S")
           echo "New tag: $new_tag"
